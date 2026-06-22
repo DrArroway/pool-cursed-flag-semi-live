@@ -159,7 +159,7 @@ let starBackgroundColors = Array.from({length: 50}, () => "#1a2c42");
 let rawWebcamImage = null;
 let activeVideoId = "oDCAAfOSqvA"; 
 
-// Custom tuned optimal alignment defaults
+// Strict default parameters calibrated to your exact landscape bounds
 const config = { 
     x: 0.495, 
     y: 0.508, 
@@ -300,20 +300,20 @@ function drawActualStar(cx, cy, spikes, outerRadius, innerRadius) {
 function drawFlag() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // 1. Draw Stripes (Official specs: 13 equal stripes alternating red/white)
+    // 1. Draw Stripes
     const stripeHeight = canvas.height / 13;
     for (let i = 0; i < 13; i++) {
         ctx.fillStyle = (i % 2 === 0) ? "#b22234" : "#ffffff";
         ctx.fillRect(0, i * stripeHeight, canvas.width, stripeHeight);
     }
 
-    // 2. Draw Canton Specifications (Official specs: 0.76 width ratio, spans 7 stripes)
+    // 2. Base Canton Sizing
     const cantonWidth = canvas.width * 0.4;
     const cantonHeight = stripeHeight * 7;
     ctx.fillStyle = "#1a2c42";
     ctx.fillRect(0, 0, cantonWidth, cantonHeight);
 
-    // 3. Process Live Data
+    // 3. Sync colors from image
     if (rawWebcamImage) {
         const sampleCanvas = document.createElement('canvas');
         sampleCanvas.width = rawWebcamImage.width;
@@ -323,7 +323,7 @@ function drawFlag() {
         starBackgroundColors = get50StarColorsFromTrapezoid(sCtx, rawWebcamImage.width, rawWebcamImage.height);
     }
 
-    // 4. Draw Camera Frame Matrix Underlay (Only visible when panel is open)
+    // 4. Calibration Frame Underlay (Hidden in normal mode)
     if (config.debug && rawWebcamImage) {
         ctx.save();
         ctx.globalAlpha = 0.75;
@@ -331,21 +331,18 @@ function drawFlag() {
         ctx.restore();
     }
 
-    // 5. Draw 50 Star Grid Tiles & Crisp Stars
+    // 5. Render Mosaic Tiles + Stars
     let starIndex = 0;
-    const rowHeight = cantonHeight / 9; // Divides canton perfectly into 9 rows
+    const rowHeight = cantonHeight / 9;
+
+    const xSpacing = cantonWidth / 12;
+    const ySpacing = cantonHeight / 10;
 
     for (let row = 1; row <= 9; row++) {
         const isEvenRow = (row % 2 === 0);
         const starsInRow = isEvenRow ? 5 : 6;
-        
-        // Calculate dynamic width for each block tile to ensure 100% edge coverage
         const cellWidth = cantonWidth / starsInRow;
         const cellYStart = (row - 1) * rowHeight;
-
-        // Visual alignment tracking metrics for star centers
-        const xSpacing = cantonWidth / 12;
-        const ySpacing = cantonHeight / 10;
         const starXStart = isEvenRow ? xSpacing * 2 : xSpacing;
 
         for (let col = 0; col < starsInRow; col++) {
@@ -356,15 +353,15 @@ function drawFlag() {
             const starY = row * ySpacing;
 
             if (!config.debug) {
-                // NORMAL VIEW: Fill the row tiles from edge to edge seamlessly
+                // NORMAL MODE: Render beautiful, borderless background grid tiles filling 100% of the space
                 ctx.fillStyle = algeaColor;
-                ctx.fillRect(col * cellWidth, cellYStart, cellWidth + 0.5, rowHeight + 0.5); // 0.5 overdraw prevents fine subpixel seams
+                ctx.fillRect(col * cellWidth, cellYStart, cellWidth + 0.5, rowHeight + 0.5);
                 
-                // Overlay solid white star glyphs smoothly
+                // Overlay crisp solid white stars on top
                 ctx.fillStyle = "#ffffff";
                 drawActualStar(starX, starY, 5, 7.5, 3.2);
             } else {
-                // CALIBRATION MODE: Traditional crosshairs and target trackers over the landscape preview
+                // CALIBRATION PANEL OPEN: Red alignment trackers over camera view
                 ctx.fillStyle = algeaColor;
                 ctx.fillRect(starX - 9, starY - 9, 18, 18);
                 
@@ -377,7 +374,7 @@ function drawFlag() {
         }
     }
 
-    // 6. Draw Interactive Green Trapezoid Target Bounds (Calibration View Only)
+    // 6. Draw Interactive Green Trapezoid (FIXED TYPO VARIABLE HERE)
     if (config.debug) {
         ctx.save();
         ctx.strokeStyle = "#00ff00";
@@ -391,7 +388,7 @@ function drawFlag() {
         const wDiff = bottomW - (cantonWidth * config.w);
         const blX = tlX - (wDiff / 2);
         const brX = blX + bottomW;
-        const bottomY = topY + (cantonHeight * config.h);
+        const bottomY = topY + (cantonHeight * config.h); // Fixed from cantonWidth to cantonHeight!
 
         ctx.beginPath();
         ctx.moveTo(tlX, topY); ctx.lineTo(trX, topY); ctx.lineTo(brX, bottomY); ctx.lineTo(blX, bottomY);
