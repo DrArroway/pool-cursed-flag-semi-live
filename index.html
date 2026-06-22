@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Old Glory Protocol - Complete Balanced Edition</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #eee;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: #ff4d4d;
+            margin-bottom: 5px;
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-style: italic;
+            text-align: center;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .flag-wrapper {
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            border: 1px solid #333;
+            background: #000;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .dashboard {
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 15px;
+            width: 100%;
+            box-sizing: border-box;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #aaa;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Dynamic Old Glory Protocol</h1>
+    <div class="subtitle">Webcam telemetry engine with irreversible, cumulative coating degradation</div>
+
+    <div class="container">
+        <div class="flag-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1900 1000">
+                <defs>
+                    <pattern id="cursedCantonBackground" width="760" height="538.46" patternUnits="userSpaceOnUse">
+                         <image id="svgPatternImage" width="760" height="538.46" x="0" y="0" />
+                    </pattern>
+                </defs>
+
+                <g id="stripes">
+                    <rect width="1900" height="76.92" y="0" fill="#B22234" />
+                    <rect width="1900" height="76.92" y="76.92" fill="#FFFFFF" />
+                    <rect width="1900" height="76.92" y="153.84" fill="#B22234" />
+                    <rect width="1900" height="76.92" y="230.76" fill="#FFFFFF" />
+                    <rect width="1900" height="76.92" y="307.68" fill="#B22234" />
+                    <rect width="1900" height="76.92" y="384.60" fill="#FFFFFF" />
+                    <rect width="1900" height="76.92" y="461.52" fill="#B22234" />
+                    <rect width="1900" height="76.92" y="538.44" fill="#FFFFFF" />
+                    <rect width="1900" height="76.92" y="615.36" fill="#B22234" />
+                    <rect width="1900" height="76.92" y="692.28" fill="#FFFFFF" />
+                    <rect width="1900" height="76.92" y="769.20" fill="#B22234" />
+                    <rect width="1900" height="76.92" y="846.12" fill="#FFFFFF" />
+                    <rect width="1900" height="76.92" y="923.04" fill="#B22234" />
+                </g>
+
+                <rect id="canto-bg" x="0" y="0" width="760" height="538.46" fill="url(#cursedCantonBackground)" />
+
+                <g id="stars" fill="#FFFFFF"></g>
+            </svg>
+        </div>
+
+        <div class="dashboard">
+            <div class="stat-box">
+                <div class="stat-label">Webcam Core Analysis</div>
+                <div class="stat-value" style="color: #00ff00;">LIVE SCANNING</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Algae Concentration</div>
+                <div id="algae-val" class="stat-value" style="color: #7fff00;">CALCULATING...</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Coating Peeling Rate</div>
+                <div id="peel-val" class="stat-value" style="color: #ff9900;">CALCULATING...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- STAR SYSTEM GENERATOR ---
+        const starsGroup = document.getElementById('stars');
+        function createStarPath(x, y, r) {
+            let path = `M ${x} ${y - r} `;
+            for (let i = 0; i < 5; i++) {
+                let angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+                path += `L ${x + r * Math.cos(angle)} ${y + r * Math.sin(angle)} `;
+                angle += (2 * Math.PI) / 5;
+                const innerR = r * 0.382;
+                path += `L ${x + innerR * Math.cos(angle)} ${y + innerR * Math.sin(angle)} `;
+            }
+            path += 'Z';
+            return path;
+        }
+
+        const xSpacing = 760 / 12;
+        const ySpacing = 538.46 / 10;
+        const starRadius = 14;
+
+        for (let row = 1; row <= 9; row++) {
+            const isEven = row % 2 === 0;
+            const starCount = isEven ? 5 : 6;
+            const xOffset = isEven ? xSpacing : 0;
+            for (let col = 1; col <= starCount; col++) {
+                const x = (col * 2 - 1) * xSpacing + xOffset;
+                const y = row * ySpacing;
+                const pathStr = createStarPath(x, y, starRadius);
+                const pathElem = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                pathElem.setAttribute("d", pathStr);
+                starsGroup.appendChild(pathElem);
+            }
+        }
+
+        // --- THE DATA-SYNCED REFLECTING POOL SIMULATOR ---
+        const textureCanvas = document.createElement('canvas');
+        textureCanvas.width = 760;
+        textureCanvas.height = 538;
+        const tCtx = textureCanvas.getContext('2d');
+
+        const FEDERAL_BLUE = '#3C3B6E';
+        const ALGAE_GREEN = '#6fdc1a';
+        const CONCRETE_GREY = '#7a7d80';
+
+        let timeFactor = 0;
+        const minPeel = 10;
+        const maxPeel = 250;
+        let cumulativePeelFactor = minPeel; 
+        let frameCount = 0;
+
+        function analyzeAndAdjustFlag() {
+            // Globally reduced dynamic execution speed
+            timeFactor += 0.0005; 
+            frameCount++;
+
+            // Accumulate peeling parameter linearly (Strictly Increasing)
+            if (cumulativePeelFactor < maxPeel) {
+                cumulativePeelFactor += 0.015; 
+            }
+
+            const w = textureCanvas.width;
+            const h = textureCanvas.height;
+
+            // 1. Render Base Layer (Blue Painting)
+            tCtx.fillStyle = FEDERAL_BLUE;
+            tCtx.fillRect(0, 0, w, h);
+
+            // 2. Render Peeling Layer (Concrete substrate patches)
+            tCtx.fillStyle = CONCRETE_GREY;
+            for(let i = 0; i < 12; i++) {
+                let seedX = (Math.sin(i * 452.12) * 0.5 + 0.5) * w;
+                let seedY = (Math.cos(i * 871.34) * 0.5 + 0.5) * h;
+                
+                let tearRadius = cumulativePeelFactor + (Math.sin(timeFactor * 10 + i) * 6); 
+                
+                tCtx.beginPath();
+                for (let a = 0; a < Math.PI * 2; a += 0.4) {
+                    let rOffset = Math.sin(a * (3 + (i%3))) * 12;
+                    let lx = seedX + Math.cos(a) * (tearRadius + rOffset);
+                    let ly = seedY + Math.sin(a) * (tearRadius + rOffset);
+                    if (a === 0) tCtx.moveTo(lx, ly); else tCtx.lineTo(lx, ly);
+                }
+                tCtx.closePath();
+                tCtx.fill();
+            }
+
+            // 3. Render Biological Sludge (Algae concentration loops)
+            tCtx.globalAlpha = 0.55 + Math.sin(timeFactor * 20) * 0.15;
+            tCtx.fillStyle = ALGAE_GREEN;
+
+            for(let x = 0; x < w; x += 40) {
+                for(let y = 0; y < h; y += 40) {
+                    let clusterDensity = Math.sin(x * 0.005 + timeFactor * 10) * Math.cos(y * 0.008 - timeFactor * 10);
+                    if(clusterDensity > -0.2) {
+                        tCtx.beginPath();
+                        tCtx.arc(x + Math.sin(timeFactor * 10 + x)*10, y + Math.cos(timeFactor * 10 + y)*10, 50 + clusterDensity * 30, 0, Math.PI * 2);
+                        tCtx.fill();
+                    }
+                }
+            }
+            tCtx.globalAlpha = 1.0; 
+
+            // 4. Update the live image reference inside pattern space natively
+            const textureData = textureCanvas.toDataURL('image/png');
+            const targetImage = document.getElementById('svgPatternImage');
+            if (targetImage) {
+                targetImage.setAttribute('href', textureData);
+            }
+
+            // Frequency analysis throttled calculation loop
+            if (frameCount % 10 === 0) {
+                calculateTruePercentages(w, h);
+            }
+
+            requestAnimationFrame(analyzeAndAdjustFlag);
+        }
+
+        function calculateTruePercentages(w, h) {
+            const imgData = tCtx.getImageData(0, 0, w, h).data;
+            let algaePixels = 0;
+            let totalPixels = w * h;
+
+            for (let i = 0; i < imgData.length; i += 4) {
+                let r = imgData[i];
+                let g = imgData[i+1];
+                let b = imgData[i+2];
+
+                // Isolate pure green algae channel space
+                if (g > r && g > b && g > 140) {
+                    algaePixels++;
+                }
+            }
+
+            // FIX: Linear mapping from scale progression values to match display requirements perfectly
+            const totalGrowthRange = maxPeel - minPeel;
+            const currentGrowth = cumulativePeelFactor - minPeel;
+            const peelPercent = Math.min(100, Math.round((currentGrowth / totalGrowthRange) * 100));
+
+            // Dynamic tracking constraint for remaining available surface areas
+            const algaePercent = Math.min(100 - peelPercent, Math.round((algaePixels / totalPixels) * 100));
+
+            document.getElementById('algae-val').innerText = `${algaePercent}% OCCUPIED`;
+            document.getElementById('peel-val').innerText = `${peelPercent}% RAW SUBSTRATE`;
+        }
+
+        // Global initialization safe load lock
+        window.addEventListener('load', () => {
+            analyzeAndAdjustFlag();
+        });
+    </script>
+</body>
+</html>
