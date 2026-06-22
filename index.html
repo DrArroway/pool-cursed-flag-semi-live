@@ -330,9 +330,13 @@ function applyAtmosphericFilters(r, g, b) {
 function updateWebcamData() {
     if (currentMode !== "live") return;
     statusDiv.textContent = "Syncing with cloud proxy matrix engine...";
+    
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.src = `/api/live-frame?vid=${encodeURIComponent(activeVideoId)}`; 
+    
+    // CACHE BUSTER: Appending the exact millisecond timestamp forces the proxy 
+    // to bypass cached memory and grab the absolute freshest frame from YouTube.
+    img.src = `/api/live-frame?vid=${encodeURIComponent(activeVideoId)}&_=${Date.now()}`; 
 
     img.onload = function() {
         if (currentMode !== "live") return;
