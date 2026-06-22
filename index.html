@@ -3,42 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic US Flag - D.C. Reflecting Pool Tracker</title>
+    <title>Algae Matrix Flag Monitor</title>
     <style>
         body {
-            margin: 0;
             background-color: #111;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: sans-serif;
-            color: #fff;
-            flex-direction: column;
+            color: #eee;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
         }
-        canvas {
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            max-width: 90vw;
-            max-height: 80vh;
+        #appContainer {
+            max-width: 800px;
+            margin: 0 auto;
         }
         #status {
-            margin-top: 20px;
+            background: #222;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: monospace;
             font-size: 14px;
-            color: #aaa;
+            color: #00ff00;
+            margin-bottom: 15px;
+            border: 1px solid #333;
+        }
+        canvas {
+            background: #000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            border-radius: 4px;
+            display: block;
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 20px;
+        }
+        .btn:hover { background: #1d4ed8; }
+        .btn-secondary { background: #4b5563; }
+        .btn-secondary:hover { background: #374151; }
+
+        #calibrationPanel {
+            background: #1c1c1e;
+            border: 1px solid #2c2c2e;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-sizing: border-box;
+            text-align: left;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: flex;
+            justify-content: space-between;
+            font-family: monospace;
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 5px;
+        }
+        .input-group label span {
+            color: #00ff00;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%; /* Spans the exact width of the panel/flag alignment container */
+            background: #3a3a3c;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #00ff00;
+            cursor: pointer;
+        }
+        .url-input {
+            width: 100%;
+            background: #2c2c2e;
+            border: 1px solid #3a3a3c;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: monospace;
+            margin-top: 5px;
         }
     </style>
 </head>
 <body>
-    <div id="controls" style="margin: 10px auto; max-width: 600px; font-family: monospace; background: #222; color: #fff; padding: 15px; border-radius: 8px; text-align: left; box-sizing: border-box;">
-    <h3 style="margin-top: 0; color: #00ff00;">🗺️ Algae Matrix Calibration Panel</h3>
-    <div style="margin-bottom: 8px;"><label>Box X (Left/Right): <input type="range" id="boxX" min="0" max="100" value="46"> <span id="valX">46%</span></label></div>
-    <div style="margin-bottom: 8px;"><label>Box Y (Up/Down): <input type="range" id="boxY" min="0" max="100" value="45"> <span id="valY">45%</span></label></div>
-    <div style="margin-bottom: 8px;"><label>Box Width: <input type="range" id="boxW" min="1" max="100" value="5"> <span id="valW">5%</span></label></div>
-    <div style="margin-bottom: 8px;"><label>Box Height: <input type="range" id="boxH" min="1" max="100" value="32"> <span id="valH">32%</span></label></div>
-    <label style="margin-top:10px; display:inline-block; cursor:pointer;"><input type="checkbox" id="toggleDebug" checked> Show Raw Camera Feed Overlay</label>
-      </div>
-    <canvas id="flagCanvas" width="1900" height="1000"></canvas>
-    <div id="status">Connecting live feed to D.C. Reflecting Pool webcam...</div>
+
+<div id="appContainer">
+    <h2>🇺🇸 Reflecting Pool Algae Density Flag Matrix</h2>
+    <div id="status">Initializing system matrices...</div>
+    
+    <canvas id="flagCanvas" width="800" height="520"></canvas>
+
+    <div>
+        <button id="toggleCalibrateBtn" class="btn">🛠️ Open Calibration Panel</button>
+    </div>
+
+    <div id="calibrationPanel" style="display: none;">
+        <h3 style="margin-top: 0; color: #00ff00; border-bottom: 1px solid #3a3a3c; padding-bottom: 8px;">🗺️ Precision Coordinate Calibration Engine</h3>
+        
+        <div class="input-group">
+            <label>Source Live Image URL / YouTube ID: <span id="currentSource">YouTube: oDCAAfOSqvA</span></label>
+            <input type="text" id="streamUrlInput" class="url-input" value="https://www.youtube.com/watch?v=oDCAAfOSqvA" placeholder="Enter full YouTube URL or raw proxy route">
+        </div>
+
+        <div class="input-group">
+            <label>Box X Axis Placement (Horizontal Center): <span id="valX">49.0%</span></label>
+            <input type="range" id="boxX" min="0" max="100" step="0.1" value="49.0">
+        </div>
+        <div class="input-group">
+            <label>Box Y Axis Placement (Top Water Cutoff): <span id="valY">51.0%</span></label>
+            <input type="range" id="boxY" min="0" max="100" step="0.1" value="51.0">
+        </div>
+        <div class="input-group">
+            <label>Top Matrix Width (Canton Scale Edge): <span id="valW">3.0%</span></label>
+            <input type="range" id="boxW" min="0.1" max="50" step="0.1" value="3.0">
+        </div>
+        <div class="input-group">
+            <label>Total Column Sample Depth Height: <span id="valH">19.0%</span></label>
+            <input type="range" id="boxH" min="0.1" max="100" step="0.1" value="19.0">
+        </div>
+        <div class="input-group">
+            <label>Trapezoid Perspective Flare (Bottom Expansion Multiplier): <span id="valP">2.50x</span></label>
+            <input type="range" id="boxP" min="0.5" max="5.0" step="0.05" value="2.50">
+        </div>
+
+        <label style="cursor: pointer; font-family: monospace; font-size: 13px; color: #a1a1aa;">
+            <input type="checkbox" id="toggleDebug" checked> Enable Camera Frame Matrix Overlay Layer
+        </label>
+    </div>
+</div>
 
 <script>
 const canvas = document.getElementById('flagCanvas');
@@ -47,90 +157,127 @@ const statusDiv = document.getElementById('status');
 
 let starBackgroundColors = Array.from({length: 50}, () => "#1a2c42");
 let rawWebcamImage = null;
+let activeVideoId = "oDCAAfOSqvA"; 
 
-// Starting configuration calibrated to your exact screenshot pool area
+// High precision configuration matching your current optimal parameters
 const config = { 
-    x: 0.46,  // Centered at 46%
-    y: 0.45,  // Top of pool at 45%
-    w: 0.05,  // Squished tight to 5% width
-    h: 0.32,  // Extended down 32% height
-    debug: true 
+    x: 0.49, 
+    y: 0.51, 
+    w: 0.03, 
+    h: 0.19, 
+    p: 2.50,
+    debug: false 
 };
 
-// Connect the HTML slider elements to our config values
-document.getElementById('boxX').addEventListener('input', (e) => { config.x = e.target.value / 100; document.getElementById('valX').textContent = e.target.value + '%'; drawFlag(); });
-document.getElementById('boxY').addEventListener('input', (e) => { config.y = e.target.value / 100; document.getElementById('valY').textContent = e.target.value + '%'; drawFlag(); });
-document.getElementById('boxW').addEventListener('input', (e) => { config.w = e.target.value / 100; document.getElementById('valW').textContent = e.target.value + '%'; drawFlag(); });
-document.getElementById('boxH').addEventListener('input', (e) => { config.h = e.target.value / 100; document.getElementById('valH').textContent = e.target.value + '%'; drawFlag(); });
+// Toggle view mechanism
+document.getElementById('toggleCalibrateBtn').addEventListener('click', (e) => {
+    const panel = document.getElementById('calibrationPanel');
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        config.debug = true;
+        e.target.textContent = "❌ Close Calibration Panel";
+        e.target.classList.add('btn-secondary');
+    } else {
+        panel.style.display = 'none';
+        config.debug = false;
+        e.target.textContent = "🛠️ Open Calibration Panel";
+        e.target.classList.remove('btn-secondary');
+    }
+    drawFlag();
+});
+
+// Real-time Slider Matrix Handlers spanning the exact length of the interface template
+const inputs = [
+    { id: 'boxX', key: 'x', div: 'valX', mult: 0.01, unit: '%' },
+    { id: 'boxY', key: 'y', div: 'valY', mult: 0.01, unit: '%' },
+    { id: 'boxW', key: 'w', div: 'valW', mult: 0.01, unit: '%' },
+    { id: 'boxH', key: 'h', div: 'valH', mult: 0.01, unit: '%' },
+    { id: 'boxP', key: 'p', div: 'valP', mult: 1, unit: 'x' }
+];
+
+inputs.forEach(input => {
+    document.getElementById(input.id).addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        config[input.key] = val * input.mult;
+        document.getElementById(input.div).textContent = val.toFixed(input.id === 'boxP' ? 2 : 1) + input.unit;
+        drawFlag();
+    });
+});
+
 document.getElementById('toggleDebug').addEventListener('change', (e) => { config.debug = e.target.checked; drawFlag(); });
 
+// URL / Live Endpoint Watcher configuration
+document.getElementById('streamUrlInput').addEventListener('change', (e) => {
+    const val = e.target.value.trim();
+    let detectedId = val;
+    
+    if (val.includes('youtube.com') || val.includes('youtu.be')) {
+        try {
+            const urlObj = new URL(val);
+            if (urlObj.searchParams.has('v')) {
+                detectedId = urlObj.searchParams.get('v');
+            } else {
+                detectedId = urlObj.pathname.split('/').pop();
+            }
+        } catch(err) {}
+    }
+    
+    activeVideoId = detectedId;
+    document.getElementById('currentSource').textContent = "Target: " + detectedId;
+    updateWebcamData();
+});
+
 function updateWebcamData() {
-    statusDiv.textContent = "Connecting to live proxy server feed...";
+    statusDiv.textContent = "Querying frame asset from cloud proxy matrix layer...";
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.src = "/api/live-frame"; // Grabs the active frame from your proxy script
+    
+    // Dynamically request using our custom live image frame architecture
+    img.src = `/api/live-frame?vid=${encodeURIComponent(activeVideoId)}`; 
 
     img.onload = function() {
-        rawWebcamImage = img; // Saves the stream frame so drawFlag can paint the overlay
+        rawWebcamImage = img;
         statusDiv.textContent = "Live Feed Connected. Canton cells mapped to actual pool pixels.";
         
-        // Process the color matrix data
         const sampleCanvas = document.createElement('canvas');
         sampleCanvas.width = img.width;
         sampleCanvas.height = img.height;
         const sCtx = sampleCanvas.getContext('2d');
         sCtx.drawImage(img, 0, 0);
 
-        starBackgroundColors = get50StarColorsFromBoundingBox(sCtx, img.width, img.height);
-        drawFlag(); // Run the drawing refresh loop
+        starBackgroundColors = get50StarColorsFromTrapezoid(sCtx, img.width, img.height);
+        drawFlag();
     };
 
     img.onerror = function() {
-        statusDiv.textContent = "Handshake latency. Retrying connection in 5 seconds...";
-        setTimeout(updateWebcamData, 5000);
+        statusDiv.textContent = "Proxy extraction boundary latency. Re-attempting pipeline handshake...";
+        setTimeout(updateWebcamData, 8000);
     };
 }
 
-function get50StarColorsFromBoundingBox(sCtx, imgW, imgH) {
+function get50StarColorsFromTrapezoid(sCtx, imgW, imgH) {
     const colors = [];
-    
-    // Core baseline coordinates (mapped from your current winning sliders)
     const baseStartX = imgW * config.x;
     const baseStartY = imgH * config.y;
     const targetW = imgW * config.w;
     const targetH = imgH * config.h;
 
-    // PERSPECTIVE EXTENSION COEFFICIENT
-    // A multiplier of 1.0 means a perfect rectangle.
-    // Setting this to 2.5 means the bottom of our matrix grid will be 2.5x WIDER 
-    // than the top row, perfectly mirroring the lens's depth perception!
-    const perspectiveExpansionFactor = 2.5;
-
     for (let row = 1; row <= 9; row++) {
-        // Calculate how far down the pool we are (0.0 at the top, 1.0 at the bottom)
         const progress = (row - 1) / 8; 
-
-        // Scale the row width dynamically based on perspective depth
-        const currentRowWidth = targetW * (1 + progress * (perspectiveExpansionFactor - 1));
-        
-        // Shift the row's starting X coordinate to the left so it expands outwards evenly from the center line
+        const currentRowWidth = targetW * (1 + progress * (config.p - 1));
         const widthDifference = currentRowWidth - targetW;
         const rowStartX = baseStartX - (widthDifference / 2);
 
-        // Grid tracking spacing for this SPECIFIC row depth
         const xSpacing = currentRowWidth / 12;
         const ySpacing = targetH / 10;
 
         const isEvenRow = (row % 2 === 0);
         const starsInRow = isEvenRow ? 5 : 6;
         const starRowLeftEdge = rowStartX + (isEvenRow ? xSpacing * 2 : xSpacing);
-
         const pixelY = Math.floor(baseStartY + (row * ySpacing));
 
         for (let col = 0; col < starsInRow; col++) {
             const pixelX = Math.floor(starRowLeftEdge + (col * xSpacing * 2));
-
-            // Guard rails to keep sampling coordinates from leaping off screen borders
             const safeX = Math.max(0, Math.min(imgW - 1, pixelX));
             const safeY = Math.max(0, Math.min(imgH - 1, pixelY));
 
@@ -148,20 +295,17 @@ function get50StarColorsFromBoundingBox(sCtx, imgW, imgH) {
 function drawFlag() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // 1. Draw Stripes
     const stripeHeight = canvas.height / 13;
     for (let i = 0; i < 13; i++) {
         ctx.fillStyle = (i % 2 === 0) ? "#b22234" : "#ffffff";
         ctx.fillRect(0, i * stripeHeight, canvas.width, stripeHeight);
     }
 
-    // 2. Draw Canton
     const cantonWidth = canvas.width * 0.4;
     const cantonHeight = stripeHeight * 7;
     ctx.fillStyle = "#1a2c42";
     ctx.fillRect(0, 0, cantonWidth, cantonHeight);
 
-    // 3. Draw Camera Underlay (The Overlay you were missing!)
     if (config.debug && rawWebcamImage) {
         ctx.save();
         ctx.globalAlpha = 0.75;
@@ -169,17 +313,15 @@ function drawFlag() {
         ctx.restore();
     }
 
-    // 4. Sample colors live if sliders move
     if (rawWebcamImage) {
         const sampleCanvas = document.createElement('canvas');
         sampleCanvas.width = rawWebcamImage.width;
         sampleCanvas.height = rawWebcamImage.height;
         const sCtx = sampleCanvas.getContext('2d');
         sCtx.drawImage(rawWebcamImage, 0, 0);
-        starBackgroundColors = get50StarColorsFromBoundingBox(sCtx, rawWebcamImage.width, rawWebcamImage.height);
+        starBackgroundColors = get50StarColorsFromTrapezoid(sCtx, rawWebcamImage.width, rawWebcamImage.height);
     }
 
-    // 5. Draw Stars & Crosshairs
     const xSpacing = cantonWidth / 12;
     const ySpacing = cantonHeight / 10;
     let starIndex = 0;
@@ -195,61 +337,44 @@ function drawFlag() {
             const starBgColor = starBackgroundColors[starIndex] || "#1a2c42";
             starIndex++;
 
-            // Draw solid color patch blocks for verification
             ctx.fillStyle = starBgColor;
             ctx.fillRect(x - 10, y - 10, 20, 20);
 
-            // Draw crosshairs
             if (config.debug) {
                 ctx.save();
                 ctx.strokeStyle = "#ff0000";
                 ctx.lineWidth = 1.5;
-                ctx.beginPath();
-                ctx.moveTo(x - 5, y); ctx.lineTo(x + 5, y);
-                ctx.moveTo(x, y - 5); ctx.lineTo(x, y + 5);
-                ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x - 5, y); ctx.lineTo(x + 5, y); ctx.moveTo(x, y - 5); ctx.lineTo(x, y + 5); ctx.stroke();
                 ctx.restore();
             }
         }
     }
 
-    // 6. Draw Green Bounding Box Target
-    // 6. Draw Green Trapezoid Perspective Frame
+    // Draw Interactive Green Trapezoid Visual Overlay 
     if (config.debug) {
         ctx.save();
         ctx.strokeStyle = "#00ff00";
         ctx.lineWidth = 2;
         
-        const cW = cantonWidth;
-        const cH = cantonHeight;
-        const pExpand = 2.5; // Must match the value in the sampler function above!
-
-        // Top Left, Top Right, Bottom Right, Bottom Left coordinates
-        const tlX = cW * config.x;
-        const trX = tlX + (cW * config.w);
-        const topY = cH * config.y;
+        const tlX = cantonWidth * config.x;
+        const trX = tlX + (cantonWidth * config.w);
+        const topY = cantonHeight * config.y;
         
-        const bottomW = (cW * config.w) * pExpand;
-        const wDiff = bottomW - (cW * config.w);
+        const bottomW = (cantonWidth * config.w) * config.p;
+        const wDiff = bottomW - (cantonWidth * config.w);
         const blX = tlX - (wDiff / 2);
         const brX = blX + bottomW;
-        const bottomY = topY + (cH * config.h);
+        const bottomY = topY + (cantonWidth * config.h); // proportional mapping bound
 
         ctx.beginPath();
-        ctx.moveTo(tlX, topY);
-        ctx.lineTo(trX, topY);
-        ctx.lineTo(brX, bottomY);
-        ctx.lineTo(blX, bottomY);
-        ctx.closePath();
-        ctx.stroke();
+        ctx.moveTo(tlX, topY); ctx.lineTo(trX, topY); ctx.lineTo(brX, bottomY); ctx.lineTo(blX, bottomY);
+        ctx.closePath(); ctx.stroke();
         ctx.restore();
     }
 }
 
-// Initial Boot
 updateWebcamData();
-setInterval(updateWebcamData, 60000); // Polling update every 60 seconds
+setInterval(updateWebcamData, 60000);
 </script>
-
 </body>
 </html>
