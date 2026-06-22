@@ -55,7 +55,7 @@ function updateWebcamData() {
     img.crossOrigin = "anonymous"; // Essential to read pixel streams without a "tainted canvas" error
     
     // REPLACE THIS URL WITH YOUR DEPLOYED CLOUDFLARE WORKER ROUTE:
-    img.src = "https://earthcam-proxy.your-username.workers.dev/";
+    img.src = "/api/live-frame";
 
     img.onload = function() {
         const sampleCanvas = document.createElement('canvas');
