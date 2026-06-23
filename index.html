@@ -129,9 +129,10 @@
         <h3 style="margin-top: 0; color: #00ff00; border-bottom: 1px solid #3a3a3c; padding-bottom: 8px;">🗺️ Precision Coordinate & Atmosphere Engine</h3>
         
         <div class="input-group">
-            <label>Data Feed Source Selector: <span id="valSource">🔴 Live Feed</span></label>
+            <label>Data Feed Source Selector: <span id="valSource">🟢 Custom Proxy (Latest)</span></label>
             <select id="sourceSelector">
-                <option value="live">🔴 Active Live Stream Feed (YouTube / Proxy)</option>
+                <option value="proxy-latest" selected>🟢 Custom Local Daytime Proxy (Latest Setup)</option>
+                <option value="live">🔴 Active Live Stream Feed (YouTube)</option>
                 <option value="archive-2026-05-15.jpg">☀️ May 15, 2026 (Sunny Day Peak Algae Archive)</option>
                 <option value="archive-2026-04-10.jpg">☀️ April 10, 2026 (Sunny Day Post-Clean Baseline)</option>
                 <option value="archive-2026-03-22.jpg">☀️ March 22, 2026 (Early Spring Clear Water Entry)</option>
@@ -188,7 +189,8 @@ const statusDiv = document.getElementById('status');
 let starBackgroundColors = Array.from({length: 50}, () => "#1a2c42");
 let rawWebcamImage = null;
 let activeVideoId = "oDCAAfOSqvA"; 
-let currentMode = "live";
+// Changed default mode to proxy-latest
+let currentMode = "proxy-latest";
 
 const config = { 
     x: 0.495, 
@@ -248,6 +250,10 @@ document.getElementById('sourceSelector').addEventListener('change', (e) => {
         currentMode = "live";
         document.getElementById('valSource').textContent = "🔴 Live Feed";
         updateWebcamData();
+    } else if (val === 'proxy-latest') {
+        currentMode = "proxy-latest";
+        document.getElementById('valSource').textContent = "🟢 Custom Proxy (Latest)";
+        loadLatestProxyImage();
     } else {
         currentMode = "archive";
         document.getElementById('valSource').textContent = "☀️ Historical Frame Asset";
@@ -342,6 +348,55 @@ function updateWebcamData() {
         if (currentMode !== "live") return;
         statusDiv.textContent = "Pipeline latency. Retrying handshake sync loop...";
         setTimeout(updateWebcamData, 6000);
+    };
+}
+
+// NEW FUNCTION: Handles resolving the custom Daytime Proxy image paths dynamically
+function loadLatestProxyImage() {
+    if (currentMode !== "proxy-latest") return;
+    statusDiv.textContent = "Loading latest autonomous custom proxy frame...";
+    
+    const img = new Image();
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+
+    // Target the semiLivePics subdirectory structure. 
+    // Uses a timestamp token (?t=) to break browser image caching.
+    img.src = `./semiLivePics/archive-${todayStr}_1.jpg?t=${Date.now()}`;
+    
+    img.onload = function() {
+        if (currentMode !== "proxy-latest") return;
+        rawWebcamImage = img;
+        statusDiv.textContent = `Displaying real-time custom daytime proxy layer (${todayStr}).`;
+        drawFlag();
+    };
+    
+    // Fallback handler if today's first image hasn't triggered yet
+    img.onerror = function() {
+        if (currentMode !== "proxy-latest") return;
+        
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yYear = yesterday.getFullYear();
+        const yMonth = String(yesterday.getMonth() + 1).padStart(2, '0');
+        const yDay = String(yesterday.getDate()).padStart(2, '0');
+        const yesterdayStr = `${yYear}-${yMonth}-${yDay}`;
+
+        statusDiv.textContent = `Today's frame pending sunrise. Loading yesterday's final baseline matrix (${yesterdayStr})...`;
+        
+        const fallbackImg = new Image();
+        fallbackImg.src = `./semiLivePics/archive-${yesterdayStr}_1.jpg`;
+        fallbackImg.onload = function() {
+            if (currentMode !== "proxy-latest") return;
+            rawWebcamImage = fallbackImg;
+            drawFlag();
+        };
+        fallbackImg.onerror = function() {
+            statusDiv.textContent = "Error: No custom local daytime proxies found. Re-calibrating matrix path.";
+        };
     };
 }
 
@@ -526,8 +581,13 @@ function drawFlag() {
     }
 }
 
-updateWebcamData();
-setInterval(updateWebcamData, 60000);
+// Initial kickoff points to the new proxy matrix function
+loadLatestProxyImage();
+// Set up polling loop to refresh data automatically every 60 seconds
+setInterval(() => {
+    if (currentMode === "live") updateWebcamData();
+    if (currentMode === "proxy-latest") loadLatestProxyImage();
+}, 60000);
 </script>
 </body>
 </html>
