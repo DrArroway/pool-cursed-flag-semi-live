@@ -304,7 +304,13 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function drawFlag() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Base native image dimensions
+        const baseW = 1280;
+        const baseH = 720;
+
+        // Target display dimensions
+        const displayW = 820;
+        const displayH = 460;
 
         if (rawWebcamImage) {
             const sampleCanvas = document.createElement('canvas');
@@ -315,7 +321,23 @@ window.addEventListener('DOMContentLoaded', () => {
             starBackgroundColors = get50StarColorsFromTrapezoid(sCtx, rawWebcamImage.width, rawWebcamImage.height);
         }
 
-        if (zoomMode && rawWebcamImage) {
+        // Apply 1:1 view sizing toggles
+        if (config.debug) {
+            canvas.width = displayW;
+            canvas.height = displayH;
+        } else {
+            canvas.width = baseW;
+            canvas.height = baseH;
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Calculate layout anchors based on current configuration variables
+        const currentCenterX = baseW * config.x;
+        const currentCenterY = baseH * (config.y + (config.h / 2));
+
+        // State View 1: Zoom Viewport Mode
+        if (zoomMode && rawWebcamImage && !config.debug) {
             const sourceX = rawWebcamImage.width * (config.x - config.w * config.p);
             const sourceY = rawWebcamImage.height * config.y;
             const sourceWidth = rawWebcamImage.width * (config.w * config.p * 2);
@@ -330,24 +352,79 @@ window.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const stripeHeight = canvas.height / 13;
-        for (let i = 0; i < 13; i++) {
-            ctx.fillStyle = (i % 2 === 0) ? "#b22234" : "#ffffff";
-            ctx.fillRect(0, i * stripeHeight, canvas.width, stripeHeight);
+        // State View 2: Calibration Mode 1:1 Clean Viewport
+        if (config.debug && rawWebcamImage) {
+            ctx.save();
+            // Calculate absolute bounding slice centered around the pool trapezoid nodes
+            let cropX = Math.floor(currentCenterX - (displayW / 2));
+            let cropY = Math.floor(currentCenterY - (displayH / 2));
+
+            // Constrain viewport crops inside physical image bounds
+            cropX = Math.max(0, Math.min(baseW - displayW, cropX));
+            cropY = Math.max(0, Math.min(baseH - displayH, cropY));
+
+            ctx.drawImage(rawWebcamImage, cropX, cropY, displayW, displayH, 0, 0, displayW, displayH);
+
+            // Render calibration framing matrix using relative coordinate transformations
+            ctx.strokeStyle = "#00ff00";
+            ctx.lineWidth = 3;
+
+            const tlX = (baseW * config.x) - cropX;
+            const trX = tlX + (baseW * config.w);
+            const topY = (baseH * config.y) - cropY;
+
+            const bottomW = (baseW * config.w) * config.p;
+            const wDiff = bottomW - (baseW * config.w);
+            const blX = tlX - (wDiff / 2);
+            const brX = blX + bottomW;
+            const bottomY = topY + (baseH * config.h);
+
+            ctx.beginPath();
+            ctx.moveTo(tlX, topY); ctx.lineTo(trX, topY); ctx.lineTo(brX, bottomY); ctx.lineTo(blX, bottomY);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Draw targeting nodes directly onto transformed context spaces
+            const xSpacingC = (baseW * config.w) / 12;
+            const ySpacingC = (baseH * config.h) / 10;
+            let starIdx = 0;
+
+            for (let row = 1; row <= 9; row++) {
+                const progress = (row - 1) / 8;
+                const currentRowW = (baseW * config.w) * (1 + progress * (config.p - 1));
+                const wDiffRow = currentRowW - (baseW * config.w);
+                const rStartX = (baseW * config.x) - (wDiffRow / 2) - cropX;
+
+                const isEvenRow = (row % 2 === 0);
+                const starsInRow = isEvenRow ? 5 : 6;
+                const starXStart = rStartX + (isEvenRow ? (currentRowW / 12) * 2 : (currentRowW / 12));
+
+                for (let col = 0; col < starsInRow; col++) {
+                    const nodeX = starXStart + (col * (currentRowW / 12) * 2);
+                    const nodeY = topY + (row * ySpacingC);
+                    ctx.fillStyle = starBackgroundColors[starIdx] || "#1a2c42";
+                    starIdx++;
+
+                    ctx.fillRect(nodeX - 7, nodeY - 7, 14, 14);
+                    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1;
+                    ctx.strokeRect(nodeX - 7, nodeY - 7, 14, 14);
+                }
+            }
+            ctx.restore();
+            return;
         }
 
-        const cantonWidth = canvas.width * 0.4;
+        // State View 3: Native Standard View Flag Rendering
+        const stripeHeight = baseH / 13;
+        for (let i = 0; i < 13; i++) {
+            ctx.fillStyle = (i % 2 === 0) ? "#b22234" : "#ffffff";
+            ctx.fillRect(0, i * stripeHeight, baseW, stripeHeight);
+        }
+
+        const cantonWidth = baseW * 0.4;
         const cantonHeight = stripeHeight * 7;
         ctx.fillStyle = "#1a2c42";
         ctx.fillRect(0, 0, cantonWidth, cantonHeight);
-
-        // Opaque overlay layer replaces ghost effect during matrix layout calibration
-        if (config.debug && rawWebcamImage) {
-            ctx.save();
-            ctx.globalAlpha = 1.0;
-            ctx.drawImage(rawWebcamImage, 0, 0, canvas.width, canvas.height);
-            ctx.restore();
-        }
 
         const xSpacing = cantonWidth / 12;
         const ySpacing = cantonHeight / 10;
@@ -368,56 +445,25 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        if (!config.debug) {
-            starCoordinates.forEach((star) => {
-                ctx.fillStyle = star.color;
-                let tileLeft, tileRight;
-                if (!star.isEvenRow) {
-                    tileLeft = star.col * (xSpacing * 2);
-                    tileRight = tileLeft + (xSpacing * 2);
-                } else {
-                    tileLeft = (star.col === 0) ? 0 : (star.x - xSpacing);
-                    tileRight = (star.col === star.starsInRow - 1) ? cantonWidth : (star.x + xSpacing);
-                }
-                let tileTop = (star.row === 1) ? 0 : (star.y - (ySpacing / 2));
-                let tileBottom = (star.row === 9) ? cantonHeight : (star.y + (ySpacing / 2));
-                ctx.fillRect(tileLeft, tileTop, (tileRight - tileLeft) + 0.5, (tileBottom - tileTop) + 0.5);
-            });
-        }
-
         starCoordinates.forEach((star) => {
-            if (!config.debug) {
-                ctx.fillStyle = "#ffffff";
-                drawActualStar(star.x, star.y, 5, 7.5, 3.2);
+            ctx.fillStyle = star.color;
+            let tileLeft, tileRight;
+            if (!star.isEvenRow) {
+                tileLeft = star.col * (xSpacing * 2);
+                tileRight = tileLeft + (xSpacing * 2);
             } else {
-                ctx.fillStyle = star.color;
-                ctx.fillRect(star.x - 9, star.y - 9, 18, 18);
-                ctx.save(); ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1;
-                ctx.strokeRect(star.x - 9, star.y - 9, 18, 18); ctx.restore();
+                tileLeft = (star.col === 0) ? 0 : (star.x - xSpacing);
+                tileRight = (star.col === star.starsInRow - 1) ? cantonWidth : (star.x + xSpacing);
             }
+            let tileTop = (star.row === 1) ? 0 : (star.y - (ySpacing / 2));
+            let tileBottom = (star.row === 9) ? cantonHeight : (star.y + (ySpacing / 2));
+            ctx.fillRect(tileLeft, tileTop, (tileRight - tileLeft) + 0.5, (tileBottom - tileTop) + 0.5);
         });
 
-        if (config.debug) {
-            ctx.save();
-            ctx.strokeStyle = "#00ff00";
-            ctx.lineWidth = 3;
-
-            const tlX = canvas.width * config.x;
-            const trX = tlX + (canvas.width * config.w);
-            const topY = canvas.height * config.y;
-
-            const bottomW = (canvas.width * config.w) * config.p;
-            const wDiff = bottomW - (canvas.width * config.w);
-            const blX = tlX - (wDiff / 2);
-            const brX = blX + bottomW;
-            const bottomY = topY + (canvas.height * config.h);
-
-            ctx.beginPath();
-            ctx.moveTo(tlX, topY); ctx.lineTo(trX, topY); ctx.lineTo(brX, bottomY); ctx.lineTo(blX, bottomY);
-            ctx.closePath();
-            ctx.stroke();
-            ctx.restore();
-        }
+        starCoordinates.forEach((star) => {
+            ctx.fillStyle = "#ffffff";
+            drawActualStar(star.x, star.y, 5, 7.5, 3.2);
+        });
     }
 
     syncSlidersToConfig();
