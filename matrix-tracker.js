@@ -315,21 +315,89 @@ window.addEventListener('DOMContentLoaded', () => {
             starBackgroundColors = get50StarColorsFromTrapezoid(sCtx, rawWebcamImage.width, rawWebcamImage.height);
         }
 
+        // =============================================================
+        // ENHANCED ZOOM VIEWPORT OPTIC (WITH PADDING HEADROOM & MATRIX OVERLAYS)
+        // =============================================================
         if (zoomMode && rawWebcamImage) {
-            const sourceX = rawWebcamImage.width * (config.x - config.w * config.p);
-            const sourceY = rawWebcamImage.height * config.y;
-            const sourceWidth = rawWebcamImage.width * (config.w * config.p * 2);
-            const sourceHeight = rawWebcamImage.height * config.h;
+            // Find absolute coordinates of the trapezoid layout bounds on native scale
+            const topY = canvas.height * config.y;
+            const bottomY = topY + (canvas.height * config.h);
+            const tlX = canvas.width * config.x;
+            const bottomW = (canvas.width * config.w) * config.p;
+            const wDiff = bottomW - (canvas.width * config.w);
+            const blX = tlX - (wDiff / 2);
 
+            // Bounding box dimensions of the trapezoid structure itself
+            const trapMinX = blX;
+            const trapMaxX = blX + bottomW;
+            const trapWidth = trapMaxX - trapMinX;
+            const trapHeight = bottomY - topY;
+
+            // Add a clean 15% padding area around the trapezoid for headroom context
+            const paddingX = trapWidth * 0.15;
+            const paddingY = trapHeight * 0.15;
+
+            const sourceX = trapMinX - paddingX;
+            const sourceY = topY - paddingY;
+            const sourceWidth = trapWidth + (paddingX * 2);
+            const sourceHeight = trapHeight + (paddingY * 2);
+
+            // Draw cropped video frame context
             ctx.drawImage(
                 rawWebcamImage,
                 Math.max(0, sourceX), Math.max(0, sourceY),
                           Math.min(rawWebcamImage.width, sourceWidth), Math.min(rawWebcamImage.height, sourceHeight),
                           0, 0, canvas.width, canvas.height
             );
+
+            // Setup scale maps to position line matrix perfectly over scaled canvas view space
+            ctx.save();
+            ctx.scale(canvas.width / sourceWidth, canvas.height / sourceHeight);
+            ctx.translate(-sourceX, -sourceY);
+
+            // 1. Draw green perimeter framing wire
+            ctx.strokeStyle = "#00ff00";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(tlX, topY);
+            ctx.lineTo(tlX + (canvas.width * config.w), topY);
+            ctx.lineTo(blX + bottomW, bottomY);
+            ctx.lineTo(blX, bottomY);
+            ctx.closePath();
+            ctx.stroke();
+
+            // 2. Overlay color target matrix indicator boxes inside the zoom toggle field
+            const ySpacingC = (canvas.height * config.h) / 10;
+            let starIdx = 0;
+
+            for (let row = 1; row <= 9; row++) {
+                const progress = (row - 1) / 8;
+                const currentRowW = (canvas.width * config.w) * (1 + progress * (config.p - 1));
+                const wDiffRow = currentRowW - (canvas.width * config.w);
+                const rStartX = (canvas.width * config.x) - (wDiffRow / 2);
+
+                const isEvenRow = (row % 2 === 0);
+                const starsInRow = isEvenRow ? 5 : 6;
+                const starXStart = rStartX + (isEvenRow ? (currentRowW / 12) * 2 : (currentRowW / 12));
+
+                for (let col = 0; col < starsInRow; col++) {
+                    const nodeX = starXStart + (col * (currentRowW / 12) * 2);
+                    const nodeY = topY + (row * ySpacingC);
+
+                    ctx.fillStyle = starBackgroundColors[starIdx] || "#1a2c42";
+                    starIdx++;
+
+                    ctx.fillRect(nodeX - 5, nodeY - 5, 10, 10);
+                    ctx.strokeStyle = "#ffffff";
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(nodeX - 5, nodeY - 5, 10, 10);
+                }
+            }
+            ctx.restore();
             return;
         }
 
+        // Standard flag rendering mechanics
         const stripeHeight = canvas.height / 13;
         for (let i = 0; i < 13; i++) {
             ctx.fillStyle = (i % 2 === 0) ? "#b22234" : "#ffffff";
@@ -341,7 +409,6 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = "#1a2c42";
         ctx.fillRect(0, 0, cantonWidth, cantonHeight);
 
-        // Opaque overlay layer replaces ghost effect during matrix layout calibration
         if (config.debug && rawWebcamImage) {
             ctx.save();
             ctx.globalAlpha = 1.0;
