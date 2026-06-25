@@ -101,14 +101,25 @@ window.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('toggleCalibrateBtn').addEventListener('click', (e) => {
         const panel = document.getElementById('calibrationPanel');
+        const zoomCard = document.getElementById('zoomOpticCard');
+
         if (panel.style.display === 'none') {
             panel.style.display = 'block';
+            if (zoomCard) zoomCard.style.display = 'block';
+
             config.debug = true;
             document.getElementById('toggleDebug').checked = true;
             e.target.textContent = "❌ Close Calibration Panel";
             e.target.classList.add('btn-secondary');
         } else {
             panel.style.display = 'none';
+            if (zoomCard) {
+                zoomCard.style.display = 'none';
+                zoomMode = false;
+                const zoomToggle = document.getElementById('toggleZoomMode');
+                if (zoomToggle) zoomToggle.checked = false;
+            }
+
             config.debug = false;
             document.getElementById('toggleDebug').checked = false;
             e.target.textContent = "🛠️ Open Calibration Panel";
@@ -316,10 +327,9 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // =============================================================
-        // ENHANCED ZOOM VIEWPORT OPTIC (WITH PADDING HEADROOM & MATRIX OVERLAYS)
+        // ZOOM MODE MECHANICS (WITH HEADROOM PADDING & MATRIX NODES OVERLAID)
         // =============================================================
         if (zoomMode && rawWebcamImage) {
-            // Find absolute coordinates of the trapezoid layout bounds on native scale
             const topY = canvas.height * config.y;
             const bottomY = topY + (canvas.height * config.h);
             const tlX = canvas.width * config.x;
@@ -327,13 +337,12 @@ window.addEventListener('DOMContentLoaded', () => {
             const wDiff = bottomW - (canvas.width * config.w);
             const blX = tlX - (wDiff / 2);
 
-            // Bounding box dimensions of the trapezoid structure itself
             const trapMinX = blX;
             const trapMaxX = blX + bottomW;
             const trapWidth = trapMaxX - trapMinX;
             const trapHeight = bottomY - topY;
 
-            // Add a clean 15% padding area around the trapezoid for headroom context
+            // Generate clean 15% visual headroom margins
             const paddingX = trapWidth * 0.15;
             const paddingY = trapHeight * 0.15;
 
@@ -342,7 +351,6 @@ window.addEventListener('DOMContentLoaded', () => {
             const sourceWidth = trapWidth + (paddingX * 2);
             const sourceHeight = trapHeight + (paddingY * 2);
 
-            // Draw cropped video frame context
             ctx.drawImage(
                 rawWebcamImage,
                 Math.max(0, sourceX), Math.max(0, sourceY),
@@ -350,12 +358,11 @@ window.addEventListener('DOMContentLoaded', () => {
                           0, 0, canvas.width, canvas.height
             );
 
-            // Setup scale maps to position line matrix perfectly over scaled canvas view space
             ctx.save();
             ctx.scale(canvas.width / sourceWidth, canvas.height / sourceHeight);
             ctx.translate(-sourceX, -sourceY);
 
-            // 1. Draw green perimeter framing wire
+            // Green alignment outline
             ctx.strokeStyle = "#00ff00";
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -366,7 +373,7 @@ window.addEventListener('DOMContentLoaded', () => {
             ctx.closePath();
             ctx.stroke();
 
-            // 2. Overlay color target matrix indicator boxes inside the zoom toggle field
+            // Render square targeting node checkpoints inside the magnified view
             const ySpacingC = (canvas.height * config.h) / 10;
             let starIdx = 0;
 
@@ -397,7 +404,7 @@ window.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Standard flag rendering mechanics
+        // Standard crisp flag presentation template
         const stripeHeight = canvas.height / 13;
         for (let i = 0; i < 13; i++) {
             ctx.fillStyle = (i % 2 === 0) ? "#b22234" : "#ffffff";
@@ -409,6 +416,7 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = "#1a2c42";
         ctx.fillRect(0, 0, cantonWidth, cantonHeight);
 
+        // Calibration overlay baseline (perfectly opaque raw webcam snapshot background)
         if (config.debug && rawWebcamImage) {
             ctx.save();
             ctx.globalAlpha = 1.0;
