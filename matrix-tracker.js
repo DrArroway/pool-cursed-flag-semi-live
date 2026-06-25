@@ -12,6 +12,9 @@ window.addEventListener('DOMContentLoaded', () => {
     let cloudCompensationActive = true;
     let algaeIsolationActive = true;
 
+    // Global variable to keep track of calculated image atmospheric state
+    let ambientSceneBrightness = 150;
+
     let config = {
         x: 0.505,
         y: 0.609,
@@ -283,20 +286,40 @@ window.addEventListener('DOMContentLoaded', () => {
         probeNextIndex();
     }
 
-    // Core lookup and correction pipeline function
+    /**
+     * Smart Atmospheric Color Pipeline Engine
+     */
     function runColorCorrectionPipeline(r, g, b) {
-        // 1. Cloud Compensation Logic
+        // 1. SMART ADAPTIVE CLOUD COMPENSATION
         if (cloudCompensationActive) {
-            const brightness = (r + g + b) / 3;
-            if (brightness < 130) {
-                const boost = (130 - brightness) * 0.4;
-                r = Math.min(255, r + boost);
-                g = Math.min(255, g + boost * 1.1);
-                b = Math.min(255, b + boost);
+            // Check if the overall image context is determined overcast/cloudy
+            if (ambientSceneBrightness < 140) {
+                // Calculate ambient variance ratio
+                const deficiencyFactor = (140 - ambientSceneBrightness) / 140;
+
+                // Adaptive Contrast S-Curve Stretch Formula
+                // Pushes upper values to sunny highlights, deepens matching shadow floors
+                const applySmartContrast = (val) => {
+                    let norm = val / 255;
+                    // S-Curve function to increase overall dynamic resolution punch
+                    norm = 1 / (1 + Math.exp(-10 * (norm - 0.5)));
+
+                    // Blend original grayed data with the expanded sunshine map relative to cloud density
+                    return val + (norm * 255 - val) * (0.45 + deficiencyFactor * 0.2);
+                };
+
+                r = applySmartContrast(r);
+                g = applySmartContrast(g);
+                b = applySmartContrast(b);
+
+                // Slight amber solar-hue bias shift injection to simulate sunlight temperature
+                r = Math.min(255, r * 1.04);
+                g = Math.min(255, g * 1.01);
+                b = Math.min(255, b * 0.96);
             }
         }
 
-        // 2. Algae Isolation Filter Logic
+        // 2. ALGAE ISOLATION FILTER LOGIC
         if (algaeIsolationActive) {
             if (g > r && g > b) {
                 g = Math.min(255, g * 1.25);
@@ -307,10 +330,26 @@ window.addEventListener('DOMContentLoaded', () => {
                 b *= 0.95;
             }
         }
-        return [Math.floor(r), Math.floor(g), Math.floor(b)];
+        return [Math.max(0, Math.min(255, r)), Math.max(0, Math.min(255, g)), Math.max(0, Math.min(255, b))];
     }
 
     function get50StarColorsFromTrapezoid(sCtx, imgW, imgH) {
+        // Sample baseline environment matrix data to compute lighting state natively first
+        try {
+            const sampleWidth = Math.floor(imgW * 0.2);
+            const sampleHeight = Math.floor(imgH * 0.2);
+            const ambientData = sCtx.getImageData(Math.floor(imgW * 0.4), Math.floor(imgH * 0.2), sampleWidth, sampleHeight).data;
+            let totalLum = 0;
+            let sampleCount = 0;
+            for (let i = 0; i < ambientData.length; i += 40) { // Step sequence to optimize loop lookup
+                totalLum += (ambientData[i] + ambientData[i+1] + ambientData[i+2]) / 3;
+                sampleCount++;
+            }
+            ambientSceneBrightness = totalLum / sampleCount;
+        } catch (e) {
+            ambientSceneBrightness = 150; // Fallback default baseline
+        }
+
         const colors = [];
         const baseStartX = imgW * config.x;
         const baseStartY = imgH * config.y;
@@ -371,7 +410,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // =============================================================
-        // ENHANCED VIEWPORT OPTIC (WITH ALGAE/CLOUD IMAGE FILTER PREVIEW)
+        // ENHANCED VIEWPORT OPTIC (WITH SMART CONTRAST PREVIEW)
         // =============================================================
         if (zoomMode && rawWebcamImage) {
             const topY = canvas.height * config.y;
@@ -394,7 +433,6 @@ window.addEventListener('DOMContentLoaded', () => {
             const sourceWidth = trapWidth + (paddingX * 2);
             const sourceHeight = trapHeight + (paddingY * 2);
 
-            // Generate filter map representation directly under calibration loop view
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = canvas.width;
             tempCanvas.height = canvas.height;
@@ -407,7 +445,6 @@ window.addEventListener('DOMContentLoaded', () => {
                            0, 0, canvas.width, canvas.height
             );
 
-            // Apply direct manipulation layer onto the layout buffer representation
             const imgData = tCtx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imgData.data;
             for (let i = 0; i < data.length; i += 4) {
