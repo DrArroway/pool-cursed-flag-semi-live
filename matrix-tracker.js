@@ -283,6 +283,33 @@ window.addEventListener('DOMContentLoaded', () => {
         probeNextIndex();
     }
 
+    // Core lookup and correction pipeline function
+    function runColorCorrectionPipeline(r, g, b) {
+        // 1. Cloud Compensation Logic
+        if (cloudCompensationActive) {
+            const brightness = (r + g + b) / 3;
+            if (brightness < 130) {
+                const boost = (130 - brightness) * 0.4;
+                r = Math.min(255, r + boost);
+                g = Math.min(255, g + boost * 1.1);
+                b = Math.min(255, b + boost);
+            }
+        }
+
+        // 2. Algae Isolation Filter Logic
+        if (algaeIsolationActive) {
+            if (g > r && g > b) {
+                g = Math.min(255, g * 1.25);
+                r *= 0.85;
+                b *= 0.85;
+            } else {
+                r *= 0.9;
+                b *= 0.95;
+            }
+        }
+        return [Math.floor(r), Math.floor(g), Math.floor(b)];
+    }
+
     function get50StarColorsFromTrapezoid(sCtx, imgW, imgH) {
         const colors = [];
         const baseStartX = imgW * config.x;
@@ -311,36 +338,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 try {
                     const pixel = sCtx.getImageData(safeX, safeY, 1, 1).data;
-                    let r = pixel[0];
-                    let g = pixel[1];
-                    let b = pixel[2];
-
-                    // 1. Cloud Compensation Logic (Normalize values on overcast gray captures)
-                    if (cloudCompensationActive) {
-                        const brightness = (r + g + b) / 3;
-                        if (brightness < 130) {
-                            const boost = (130 - brightness) * 0.4;
-                            r = Math.min(255, r + boost);
-                            g = Math.min(255, g + boost * 1.1); // Slightly assist greens
-                            b = Math.min(255, b + boost);
-                        }
-                    }
-
-                    // 2. Algae Isolation Filter Logic (Exaggerate/Extract Organic Green Hue Index)
-                    if (algaeIsolationActive) {
-                        if (g > r && g > b) {
-                            // Organic green bias acceleration
-                            g = Math.min(255, g * 1.25);
-                            r *= 0.85;
-                            b *= 0.85;
-                        } else {
-                            // Deep water reflection baseline attenuation
-                            r *= 0.9;
-                            b *= 0.95;
-                        }
-                    }
-
-                    colors.push(`rgb(${Math.floor(r)}, ${Math.floor(g)}, ${Math.floor(b)})`);
+                    const corrected = runColorCorrectionPipeline(pixel[0], pixel[1], pixel[2]);
+                    colors.push(`rgb(${corrected[0]}, ${corrected[1]}, ${corrected[2]})`);
                 } catch(e) {
                     colors.push("#1a2c42");
                 }
@@ -372,7 +371,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // =============================================================
-        // ENHANCED VIEWPORT OPTIC (WITH PADDING HEADROOM & MATRIX OVERLAYS)
+        // ENHANCED VIEWPORT OPTIC (WITH ALGAE/CLOUD IMAGE FILTER PREVIEW)
         // =============================================================
         if (zoomMode && rawWebcamImage) {
             const topY = canvas.height * config.y;
@@ -395,18 +394,35 @@ window.addEventListener('DOMContentLoaded', () => {
             const sourceWidth = trapWidth + (paddingX * 2);
             const sourceHeight = trapHeight + (paddingY * 2);
 
-            ctx.drawImage(
+            // Generate filter map representation directly under calibration loop view
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tCtx = tempCanvas.getContext('2d');
+
+            tCtx.drawImage(
                 rawWebcamImage,
                 Math.max(0, sourceX), Math.max(0, sourceY),
-                          Math.min(rawWebcamImage.width, sourceWidth), Math.min(rawWebcamImage.height, sourceHeight),
-                          0, 0, canvas.width, canvas.height
+                           Math.min(rawWebcamImage.width, sourceWidth), Math.min(rawWebcamImage.height, sourceHeight),
+                           0, 0, canvas.width, canvas.height
             );
+
+            // Apply direct manipulation layer onto the layout buffer representation
+            const imgData = tCtx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const corrected = runColorCorrectionPipeline(data[i], data[i+1], data[i+2]);
+                data[i] = corrected[0];
+                data[i+1] = corrected[1];
+                data[i+2] = corrected[2];
+            }
+            tCtx.putImageData(imgData, 0, 0);
+            ctx.drawImage(tempCanvas, 0, 0);
 
             ctx.save();
             ctx.scale(canvas.width / sourceWidth, canvas.height / sourceHeight);
             ctx.translate(-sourceX, -sourceY);
 
-            // Perimeter mapping vector
             ctx.strokeStyle = "#00ff00";
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -417,7 +433,6 @@ window.addEventListener('DOMContentLoaded', () => {
             ctx.closePath();
             ctx.stroke();
 
-            // Render node boxes directly within the zoom panel view
             const ySpacingC = (canvas.height * config.h) / 10;
             let starIdx = 0;
 
@@ -448,7 +463,6 @@ window.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Standard crisp flag layout base structure
         const stripeHeight = canvas.height / 13;
         for (let i = 0; i < 13; i++) {
             ctx.fillStyle = (i % 2 === 0) ? "#b22234" : "#ffffff";
@@ -462,8 +476,23 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (config.debug && rawWebcamImage) {
             ctx.save();
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tCtx = tempCanvas.getContext('2d');
+            tCtx.drawImage(rawWebcamImage, 0, 0, canvas.width, canvas.height);
+
+            const imgData = tCtx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const corrected = runColorCorrectionPipeline(data[i], data[i+1], data[i+2]);
+                data[i] = corrected[0];
+                data[i+1] = corrected[1];
+                data[i+2] = corrected[2];
+            }
+            tCtx.putImageData(imgData, 0, 0);
             ctx.globalAlpha = 1.0;
-            ctx.drawImage(rawWebcamImage, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(tempCanvas, 0, 0);
             ctx.restore();
         }
 
