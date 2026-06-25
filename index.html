@@ -112,7 +112,7 @@
                         <input class="form-check-input" type="checkbox" id="toggleZoomMode">
                         <label class="form-check-label text-info fw-bold" for="toggleZoomMode">Magnify & Zoom directly to Pool Trapezoid</label>
                     </div>
-                    <small class="text-muted d-block mt-1">When active, zooms tightly onto the pool trapezoid boundaries with a 15% margin headroom and overlays targeting squares over it.</small>
+                    <small class="text-muted d-block mt-1">When active, zooms tightly onto the pool boundaries with 15% visual headroom and overlays target markers.</small>
                 </div>
             </div>
 
@@ -122,7 +122,22 @@
                 <div class="card-header text-white">🎯 Grid Overlay Calibration Mechanics</div>
                 <div class="card-body">
 
-                    <div class="form-check form-switch mb-4" style="display:none;">
+                    <div class="row mb-3 g-2">
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="toggleCloudComp" checked>
+                                <label class="form-check-label text-light small fw-bold" for="toggleCloudComp">☁️ Cloud Comp</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="toggleAlgaeIsolate" checked>
+                                <label class="form-check-label text-success small fw-bold" for="toggleAlgaeIsolate">🦠 Algae Isolate</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-4" style="display: none;">
                         <input class="form-check-input" type="checkbox" id="toggleDebug">
                         <label class="form-check-label text-warning fw-bold" for="toggleDebug">Toggle Direct Frame Alpha Underlay Overlay</label>
                     </div>

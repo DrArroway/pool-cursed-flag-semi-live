@@ -8,6 +8,10 @@ window.addEventListener('DOMContentLoaded', () => {
     let currentMode = "proxy-latest";
     let zoomMode = false;
 
+    // Filter feature states
+    let cloudCompensationActive = true;
+    let algaeIsolationActive = true;
+
     let config = {
         x: 0.505,
         y: 0.609,
@@ -97,6 +101,8 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('valP').textContent = config.p.toFixed(2) + 'x';
 
         document.getElementById('toggleDebug').checked = config.debug;
+        document.getElementById('toggleCloudComp').checked = cloudCompensationActive;
+        document.getElementById('toggleAlgaeIsolate').checked = algaeIsolationActive;
     }
 
     document.getElementById('toggleCalibrateBtn').addEventListener('click', (e) => {
@@ -130,6 +136,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('toggleZoomMode').addEventListener('change', (e) => {
         zoomMode = e.target.checked;
+        drawFlag();
+    });
+
+    document.getElementById('toggleCloudComp').addEventListener('change', (e) => {
+        cloudCompensationActive = e.target.checked;
+        drawFlag();
+    });
+
+    document.getElementById('toggleAlgaeIsolate').addEventListener('change', (e) => {
+        algaeIsolationActive = e.target.checked;
         drawFlag();
     });
 
@@ -295,7 +311,36 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 try {
                     const pixel = sCtx.getImageData(safeX, safeY, 1, 1).data;
-                    colors.push(`rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`);
+                    let r = pixel[0];
+                    let g = pixel[1];
+                    let b = pixel[2];
+
+                    // 1. Cloud Compensation Logic (Normalize values on overcast gray captures)
+                    if (cloudCompensationActive) {
+                        const brightness = (r + g + b) / 3;
+                        if (brightness < 130) {
+                            const boost = (130 - brightness) * 0.4;
+                            r = Math.min(255, r + boost);
+                            g = Math.min(255, g + boost * 1.1); // Slightly assist greens
+                            b = Math.min(255, b + boost);
+                        }
+                    }
+
+                    // 2. Algae Isolation Filter Logic (Exaggerate/Extract Organic Green Hue Index)
+                    if (algaeIsolationActive) {
+                        if (g > r && g > b) {
+                            // Organic green bias acceleration
+                            g = Math.min(255, g * 1.25);
+                            r *= 0.85;
+                            b *= 0.85;
+                        } else {
+                            // Deep water reflection baseline attenuation
+                            r *= 0.9;
+                            b *= 0.95;
+                        }
+                    }
+
+                    colors.push(`rgb(${Math.floor(r)}, ${Math.floor(g)}, ${Math.floor(b)})`);
                 } catch(e) {
                     colors.push("#1a2c42");
                 }
@@ -327,7 +372,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // =============================================================
-        // ZOOM MODE MECHANICS (WITH HEADROOM PADDING & MATRIX NODES OVERLAID)
+        // ENHANCED VIEWPORT OPTIC (WITH PADDING HEADROOM & MATRIX OVERLAYS)
         // =============================================================
         if (zoomMode && rawWebcamImage) {
             const topY = canvas.height * config.y;
@@ -342,7 +387,6 @@ window.addEventListener('DOMContentLoaded', () => {
             const trapWidth = trapMaxX - trapMinX;
             const trapHeight = bottomY - topY;
 
-            // Generate clean 15% visual headroom margins
             const paddingX = trapWidth * 0.15;
             const paddingY = trapHeight * 0.15;
 
@@ -362,7 +406,7 @@ window.addEventListener('DOMContentLoaded', () => {
             ctx.scale(canvas.width / sourceWidth, canvas.height / sourceHeight);
             ctx.translate(-sourceX, -sourceY);
 
-            // Green alignment outline
+            // Perimeter mapping vector
             ctx.strokeStyle = "#00ff00";
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -373,7 +417,7 @@ window.addEventListener('DOMContentLoaded', () => {
             ctx.closePath();
             ctx.stroke();
 
-            // Render square targeting node checkpoints inside the magnified view
+            // Render node boxes directly within the zoom panel view
             const ySpacingC = (canvas.height * config.h) / 10;
             let starIdx = 0;
 
@@ -404,7 +448,7 @@ window.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Standard crisp flag presentation template
+        // Standard crisp flag layout base structure
         const stripeHeight = canvas.height / 13;
         for (let i = 0; i < 13; i++) {
             ctx.fillStyle = (i % 2 === 0) ? "#b22234" : "#ffffff";
@@ -416,7 +460,6 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = "#1a2c42";
         ctx.fillRect(0, 0, cantonWidth, cantonHeight);
 
-        // Calibration overlay baseline (perfectly opaque raw webcam snapshot background)
         if (config.debug && rawWebcamImage) {
             ctx.save();
             ctx.globalAlpha = 1.0;
