@@ -1,5 +1,5 @@
 #!/bin/bash
-cd ~/pool-archiver
+cd ~/pool-archiver/pool-cursed-flag-semi-live
 
 STATE_FILE="archive_state.json"
 TODAY=$(date +%Y-%m-%d)
