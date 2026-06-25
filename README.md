@@ -22,6 +22,7 @@ Archive browser so you can watch the bloom evolve day by day
 Adjustable extraction algeas j, just because we want the flag grenn (you can turn it off for real data)
 
 Running it:
+
 just what it at https://drarroway.github.io/pool-cursed-flag-semi-live/ to enjoy
 or forke it, improve it and run the capture scripts if you're terminally online
 
