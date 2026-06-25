@@ -290,32 +290,29 @@ window.addEventListener('DOMContentLoaded', () => {
      * Smart Atmospheric Color Pipeline Engine
      */
     function runColorCorrectionPipeline(r, g, b) {
-        // 1. SMART ADAPTIVE CLOUD COMPENSATION
+        // 1. SMART ADAPTIVE CLOUD COMPENSATION (FIXED FOR CONSTANT EVALUATION)
         if (cloudCompensationActive) {
-            // Check if the overall image context is determined overcast/cloudy
-            if (ambientSceneBrightness < 140) {
-                // Calculate ambient variance ratio
-                const deficiencyFactor = (140 - ambientSceneBrightness) / 140;
+            // Calculate individual pixel relative luminance
+            const pixelLum = (r * 0.299 + g * 0.587 + b * 0.114);
 
-                // Adaptive Contrast S-Curve Stretch Formula
-                // Pushes upper values to sunny highlights, deepens matching shadow floors
-                const applySmartContrast = (val) => {
-                    let norm = val / 255;
-                    // S-Curve function to increase overall dynamic resolution punch
-                    norm = 1 / (1 + Math.exp(-10 * (norm - 0.5)));
+            // Apply S-Curve contrast stretch directly to enhance flat midtones on overcast captures
+            const applySmartContrast = (val) => {
+                let norm = val / 255;
+                // Stronger contrast shape centered at mid-gray
+                norm = 1 / (1 + Math.exp(-8 * (norm - 0.5)));
+                return val + (norm * 255 - val) * 0.5; // 50% blend ratio
+            };
 
-                    // Blend original grayed data with the expanded sunshine map relative to cloud density
-                    return val + (norm * 255 - val) * (0.45 + deficiencyFactor * 0.2);
-                };
+            r = applySmartContrast(r);
+            g = applySmartContrast(g);
+            b = applySmartContrast(b);
 
-                r = applySmartContrast(r);
-                g = applySmartContrast(g);
-                b = applySmartContrast(b);
-
-                // Slight amber solar-hue bias shift injection to simulate sunlight temperature
-                r = Math.min(255, r * 1.04);
-                g = Math.min(255, g * 1.01);
-                b = Math.min(255, b * 0.96);
+            // Dynamically inject solar warmth if the image context leans dark/muddy
+            if (ambientSceneBrightness < 160) {
+                const warmthFactor = (160 - ambientSceneBrightness) / 160;
+                r = Math.min(255, r * (1.02 + warmthFactor * 0.04));
+                g = Math.min(255, g * (1.01 + warmthFactor * 0.02));
+                b = Math.min(255, b * 0.95);
             }
         }
 
