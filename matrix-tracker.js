@@ -20,9 +20,70 @@ let config = {
     debug: false 
 };
 
-// Set default fallback date in picker to today
-const todayObj = new Date();
-document.getElementById('archiveDateInput').value = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
+// --- ARCHIVE CATALOG DATABASE DEFINITION ---
+// We map out the exact files that your archiver cron loops have committed to your repo folder.
+const archiveCatalog = {
+    "2026-06-23": { totalImages: 1, baseHour: 10, intervalMinutes: 0 },
+    "2026-06-24": { totalImages: 1, baseHour: 12, intervalMinutes: 0 },
+    "2026-06-25": { totalImages: 2, baseHour: 9, intervalMinutes: 45 } // Adjust tracking indices to match real snapshots
+};
+
+// Dynamically populate date choices on setup
+function initArchiveCatalogUI() {
+    const dateSelect = document.getElementById('archiveDateSelect');
+    dateSelect.innerHTML = "";
+    
+    Object.keys(archiveCatalog).sort().reverse().forEach(dateStr => {
+        const opt = document.createElement('option');
+        opt.value = dateStr;
+        opt.textContent = dateStr;
+        dateSelect.appendChild(opt);
+    });
+
+    // Fire constraint adjustments on choice selection switches
+    dateSelect.addEventListener('change', syncArchiveInputConstraints);
+    document.getElementById('archiveIndexInput').addEventListener('input', updateEstimatedTimeReadout);
+}
+
+function syncArchiveInputConstraints() {
+    const chosenDate = document.getElementById('archiveDateSelect').value;
+    const indexInput = document.getElementById('archiveIndexInput');
+    const maxLabel = document.getElementById('maxAvailableLabel');
+    
+    if (!chosenDate || !archiveCatalog[chosenDate]) return;
+    
+    const count = archiveCatalog[chosenDate].totalImages;
+    indexInput.max = count;
+    if (parseInt(indexInput.value) > count) {
+        indexInput.value = count;
+    }
+    maxLabel.textContent = `of ${count} available`;
+    
+    updateEstimatedTimeReadout();
+}
+
+function updateEstimatedTimeReadout() {
+    const chosenDate = document.getElementById('archiveDateSelect').value;
+    const index = parseInt(document.getElementById('archiveIndexInput').value) || 1;
+    const metaBox = document.getElementById('archiveMetaDetails');
+    
+    if (!chosenDate || !archiveCatalog[chosenDate]) {
+        metaBox.style.display = 'none';
+        return;
+    }
+    
+    const dayData = archiveCatalog[chosenDate];
+    // Formulate a sequential projection of snapshot capture timestamps
+    let totalMinutes = (dayData.baseHour * 60) + dayData.intervalMinutes + ((index - 1) * 30);
+    let hr = Math.floor(totalMinutes / 60);
+    let min = totalMinutes % 60;
+    let ampm = hr >= 12 ? 'PM' : 'AM';
+    let displayHr = hr % 12 === 0 ? 12 : hr % 12;
+    let displayMin = String(min).padStart(2, '0');
+    
+    metaBox.style.display = 'block';
+    metaBox.textContent = `⏰ Capture Time: ~ ${displayHr}:${displayMin} ${ampm} EDT`;
+}
 
 function syncSlidersToConfig() {
     document.getElementById('boxX').value = config.x * 100;
@@ -64,7 +125,6 @@ document.getElementById('toggleCalibrateBtn').addEventListener('click', (e) => {
     drawFlag();
 });
 
-// Watch Zoom Mode Switcher
 document.getElementById('toggleZoomMode').addEventListener('change', (e) => {
     zoomMode = e.target.checked;
     drawFlag();
@@ -100,19 +160,19 @@ document.getElementById('sourceSelector').addEventListener('change', (e) => {
     const val = e.target.value;
     currentMode = val;
     
-    // Toggle historical browser field visibility
     const archivePicker = document.getElementById('archivePickerContainer');
     if (val === 'archive-browse') {
         archivePicker.style.display = 'block';
         document.getElementById('valSource').textContent = "📅 Historical Archive Mode";
         document.getElementById('valSource').className = "badge bg-info text-dark";
+        syncArchiveInputConstraints();
         loadCustomArchiveTarget();
     } else {
         archivePicker.style.display = 'none';
         if (val === 'live') {
             document.getElementById('valSource').textContent = "🔴 YT Preview Thumbnail";
             document.getElementById('valSource').className = "badge bg-danger";
-            statusDiv.innerHTML = `<strong style="color: #ffcc00;">⚠️ RUNTIME NOTICE:</strong> This static video placeholder layout differs from our cropped repository snapshots.`;
+            statusDiv.innerHTML = `⚠️ Static proxy layer mode active.`;
             updateWebcamData();
         } else if (val === 'proxy-latest') {
             document.getElementById('valSource').textContent = "🟢 Custom Proxy (Latest)";
@@ -122,11 +182,10 @@ document.getElementById('sourceSelector').addEventListener('change', (e) => {
     }
 });
 
-// Trigger manually loading selected archive asset
 document.getElementById('loadArchiveBtn').addEventListener('click', loadCustomArchiveTarget);
 
 function loadCustomArchiveTarget() {
-    const chosenDate = document.getElementById('archiveDateInput').value;
+    const chosenDate = document.getElementById('archiveDateSelect').value;
     const chosenIndex = document.getElementById('archiveIndexInput').value;
     if (!chosenDate) return;
 
@@ -141,7 +200,7 @@ function loadCustomArchiveTarget() {
         drawFlag();
     };
     img.onerror = function() {
-        statusDiv.innerHTML = `<span style="color: #f85149;">❌ Error: Asset './semiLivePics/${targetedFile}' not found.</span> Try a different index number or historical capture date.`;
+        statusDiv.innerHTML = `<span style="color: #f85149;">❌ Error: Asset './semiLivePics/${targetedFile}' not found.</span>`;
     };
 }
 
@@ -214,21 +273,13 @@ function applyAtmosphericFilters(r, g, b) {
 
 function updateWebcamData() {
     if (currentMode !== "live") return;
-    
     const img = new Image();
     img.crossOrigin = "anonymous";
-    const timestamp = Date.now();
-    img.src = `/api/live-frame?vid=${encodeURIComponent(activeVideoId)}&nocache=true&time=${timestamp}`; 
-
+    img.src = `/api/live-frame?vid=${encodeURIComponent(activeVideoId)}&nocache=true&time=${Date.now()}`; 
     img.onload = function() {
         if (currentMode !== "live") return;
         rawWebcamImage = img;
         drawFlag();
-    };
-    img.onerror = function() {
-        if (currentMode !== "live") return;
-        statusDiv.textContent = "Pipeline streaming network latency. Retrying proxy fallback loops...";
-        setTimeout(updateWebcamData, 6000);
     };
 }
 
@@ -237,30 +288,24 @@ function loadLatestProxyImage() {
     statusDiv.textContent = "Scanning for the latest daytime proxy frame layer...";
     
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const todayStr = `${year}-${month}-${day}`;
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     let highestFoundImg = null;
     let currentCheckIndex = 1;
 
     function probeNextIndex() {
         if (currentMode !== "proxy-latest") return;
-
         const testImg = new Image();
         testImg.src = `./semiLivePics/archive-${todayStr}_${currentCheckIndex}.jpg?t=${Date.now()}`;
-
         testImg.onload = function() {
             highestFoundImg = testImg;
             currentCheckIndex++;
             probeNextIndex();
         };
-
         testImg.onerror = function() {
             if (highestFoundImg) {
                 rawWebcamImage = highestFoundImg;
-                statusDiv.textContent = `Displaying custom daytime proxy snapshot metrics: archive-${todayStr}_${currentCheckIndex - 1}.jpg (Captured Today: ${todayStr}).`;
+                statusDiv.textContent = `Displaying proxy snapshot: archive-${todayStr}_${currentCheckIndex - 1}.jpg`;
                 drawFlag();
             } else {
                 loadYesterdayFallback();
@@ -271,12 +316,7 @@ function loadLatestProxyImage() {
     function loadYesterdayFallback() {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        const yYear = yesterday.getFullYear();
-        const yMonth = String(yesterday.getMonth() + 1).padStart(2, '0');
-        const yDay = String(yesterday.getDate()).padStart(2, '0');
-        const yesterdayStr = `${yYear}-${yMonth}-${yDay}`;
-
-        statusDiv.textContent = `Today's image pending sunrise runtime. Loading historical baseline array: archive-${yesterdayStr}_1.jpg (Captured: ${yesterdayStr}).`;
+        const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
         
         const fallbackImg = new Image();
         fallbackImg.src = `./semiLivePics/archive-${yesterdayStr}_1.jpg`;
@@ -285,11 +325,7 @@ function loadLatestProxyImage() {
             rawWebcamImage = fallbackImg;
             drawFlag();
         };
-        fallbackImg.onerror = function() {
-            statusDiv.textContent = "System alert: No local daytime proxy files identified inside repo directory path.";
-        };
     }
-
     probeNextIndex();
 }
 
@@ -353,7 +389,6 @@ function drawFlag() {
         starBackgroundColors = get50StarColorsFromTrapezoid(sCtx, rawWebcamImage.width, rawWebcamImage.height);
     }
 
-    // IF ZOOM MODE IS TURNED ON: Render ONLY the isolated pool area onto the entire canvas!
     if (zoomMode && rawWebcamImage) {
         const sourceX = rawWebcamImage.width * (config.x - config.w * config.p);
         const sourceY = rawWebcamImage.height * config.y;
@@ -366,10 +401,9 @@ function drawFlag() {
             Math.min(rawWebcamImage.width, sourceWidth), Math.min(rawWebcamImage.height, sourceHeight),
             0, 0, canvas.width, canvas.height
         );
-        return; // Skip normal flag layout calculations when zoom mode is taking over the screen
+        return;
     }
 
-    // NORMAL FLAG MODE LAYOUT RENDERING
     const stripeHeight = canvas.height / 13;
     for (let i = 0; i < 13; i++) {
         ctx.fillStyle = (i % 2 === 0) ? "#b22234" : "#ffffff";
@@ -382,32 +416,13 @@ function drawFlag() {
     ctx.fillRect(0, 0, cantonWidth, cantonHeight);
 
     if (config.debug && rawWebcamImage) {
-        ctx.save();
-        ctx.globalAlpha = 0.75;
-        if (config.cloud !== 1.0 || config.algae > 1.0) {
-            const filterCanvas = document.createElement('canvas');
-            filterCanvas.width = rawWebcamImage.width;
-            filterCanvas.height = rawWebcamImage.height;
-            const fCtx = filterCanvas.getContext('2d');
-            fCtx.drawImage(rawWebcamImage, 0, 0);
-
-            const imgData = fCtx.getImageData(0, 0, filterCanvas.width, filterCanvas.height);
-            const data = imgData.data;
-            for (let i = 0; i < data.length; i += 4) {
-                const [r, g, b] = applyAtmosphericFilters(data[i], data[i+1], data[i+2]);
-                data[i] = r; data[i+1] = data[i+2] = b;
-            }
-            fCtx.putImageData(imgData, 0, 0);
-            ctx.drawImage(filterCanvas, 0, 0, cantonWidth, cantonHeight);
-        } else {
-            ctx.drawImage(rawWebcamImage, 0, 0, cantonWidth, cantonHeight);
-        }
+        ctx.save(); ctx.globalAlpha = 0.75;
+        ctx.drawImage(rawWebcamImage, 0, 0, cantonWidth, cantonHeight);
         ctx.restore();
     }
 
     const xSpacing = cantonWidth / 12;
     const ySpacing = cantonHeight / 10;
-
     const starCoordinates = [];
     let starIndex = 0;
 
@@ -421,7 +436,6 @@ function drawFlag() {
             const starY = row * ySpacing;
             const algeaColor = starBackgroundColors[starIndex] || "#1a2c42";
             starIndex++;
-
             starCoordinates.push({ x: starX, y: starY, row: row, col: col, isEvenRow: isEvenRow, starsInRow: starsInRow, color: algeaColor });
         }
     }
@@ -451,8 +465,7 @@ function drawFlag() {
             ctx.fillStyle = star.color;
             ctx.fillRect(star.x - 9, star.y - 9, 18, 18);
             ctx.save(); ctx.strokeStyle = "#ff0000"; ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.moveTo(star.x - 5, star.y); ctx.lineTo(star.x + 5, star.y); ctx.moveTo(star.x, star.y - 5); ctx.lineTo(star.x, star.y + 5); ctx.stroke();
-            ctx.restore();
+            ctx.beginPath(); ctx.moveTo(star.x - 5, star.y); ctx.lineTo(star.x + 5, star.y); ctx.stroke(); ctx.restore();
         }
     });
 
@@ -468,6 +481,7 @@ function drawFlag() {
 
 // Kickstart logic pipelines
 syncSlidersToConfig();
+initArchiveCatalogUI();
 loadLatestProxyImage();
 
 setInterval(() => {

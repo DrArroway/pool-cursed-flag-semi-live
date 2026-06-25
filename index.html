@@ -83,11 +83,18 @@
                     </div>
 
                     <div id="archivePickerContainer" class="mb-3" style="display: none;">
-                        <label for="archiveDateInput" style="color: #58a6ff;">Select Archive Snapshot</label>
-                        <div class="input-group input-group-sm">
-                            <input type="date" id="archiveDateInput" class="form-control">
-                            <input type="number" id="archiveIndexInput" class="form-control" value="1" min="1" max="20" style="max-width: 70px;">
+                        <label for="archiveDateSelect" style="color: #58a6ff;">Select Available Capture Date</label>
+                        <select id="archiveDateSelect" class="form-select mb-2"></select>
+                        
+                        <label for="archiveIndexInput" style="color: #58a6ff;">Image Sequence Index</label>
+                        <div class="input-group input-group-sm mb-2">
+                            <input type="number" id="archiveIndexInput" class="form-control" value="1" min="1" max="1">
+                            <span class="input-group-text bg-dark border-secondary text-muted" id="maxAvailableLabel">of 1 available</span>
                             <button id="loadArchiveBtn" class="btn btn-info text-dark fw-bold">Load</button>
+                        </div>
+                        
+                        <div id="archiveMetaDetails" class="alert alert-dark py-2 px-3 small mt-2 mb-0 border-secondary text-info" style="display: none; font-family: monospace; background-color: #0d1117;">
+                            ⏰ Capture Time: Processing timestamp...
                         </div>
                     </div>
 
