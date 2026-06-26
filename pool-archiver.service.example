@@ -1,0 +1,12 @@
+[Unit]
+Description=Run EarthCam Flag Archiver on Startup and Wakeup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/YOUR_USERNAME/pool-archiver/pool-cursed-flag-semi-live
+ExecStart=/home/YOUR_USERNAME/pool-archiver/pool-cursed-flag-semi-live/run_archive.sh
+
+[Install]
+WantedBy=default.target
