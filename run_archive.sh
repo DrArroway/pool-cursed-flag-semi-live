@@ -66,6 +66,8 @@ fi
 # Scale the isolated widescreen matrix frame cleanly
 magick raw_capture.png -resize 1280x720! "$OUTPUT_NAME"
 
+# ... (rest of the image processing code above) ...
+
 echo "🎯 Frame saved successfully: $OUTPUT_NAME"
 rm -f raw_capture.png
 
@@ -76,13 +78,28 @@ node -e "
   fs.writeFileSync('$STATE_FILE', JSON.stringify(state));
 "
 
+# ==========================================================
+# PASTE THE NEW STEP HERE: AUTOMATED CATALOG INJECTION
+# ==========================================================
+node -e "
+  const fs = require('fs');
+  const catalogPath = './semiLivePics/catalog_registry.json';
+  let catalog = {};
+  if (fs.existsSync(catalogPath)) {
+     try { catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8')); } catch(e) {}
+  }
+  catalog['$TODAY'] = { totalImages: $NEXT_INDEX, baseHour: 6, intervalMinutes: 0 };
+  fs.writeFileSync(catalogPath, JSON.stringify(catalog, null, 2));
+"
+
 # ==========================================
 # AUTOMATED GITHUB UPLOAD
 # ==========================================
 echo "🚀 Preparing GitHub sync..."
 
 git pull origin main --rebase
-git add "$OUTPUT_NAME" "$STATE_FILE"
+# Make sure to add the new catalog file to git so it gets pushed!
+git add "$OUTPUT_NAME" "$STATE_FILE" "./semiLivePics/catalog_registry.json"
 git commit -m "Auto-archive capture: $OUTPUT_NAME [skip ci]"
 
 if git push origin main; then

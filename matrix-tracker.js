@@ -240,8 +240,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('toggleDebug').addEventListener('change', (e) => { config.debug = e.target.checked; drawFlag(); });
 
+    let isProbing = false; // Flag to prevent stacking interval races
+
     function loadLatestProxyImage() {
-        if (currentMode !== "proxy-latest") return;
+        if (currentMode !== "proxy-latest" || isProbing) return;
+        isProbing = true;
         statusDiv.textContent = "Scanning workspace folders for latest snapshot capture...";
 
         const now = new Date();
@@ -251,7 +254,17 @@ window.addEventListener('DOMContentLoaded', () => {
         let currentCheckIndex = 1;
 
         function probeNextIndex() {
-            if (currentMode !== "proxy-latest") return;
+            if (currentMode !== "proxy-latest") {
+                isProbing = false;
+                return;
+            }
+
+            // Set a safety cutoff ceiling so a broken directory state won't lock up the browser
+            if (currentCheckIndex > 10) {
+                finalizeLoad();
+                return;
+            }
+
             const testImg = new Image();
             testImg.src = `./semiLivePics/archive-${todayStr}_${currentCheckIndex}.jpg?t=${Date.now()}`;
             testImg.onload = function() {
@@ -260,14 +273,19 @@ window.addEventListener('DOMContentLoaded', () => {
                 probeNextIndex();
             };
             testImg.onerror = function() {
-                if (highestFoundImg) {
-                    rawWebcamImage = highestFoundImg;
-                    statusDiv.textContent = `Displaying proxy snapshot: archive-${todayStr}_${currentCheckIndex - 1}.jpg`;
-                    drawFlag();
-                } else {
-                    loadYesterdayFallback();
-                }
+                finalizeLoad();
             };
+        }
+
+        function finalizeLoad() {
+            isProbing = false;
+            if (highestFoundImg) {
+                rawWebcamImage = highestFoundImg;
+                statusDiv.textContent = `Displaying proxy snapshot: archive-${todayStr}_${currentCheckIndex - 1}.jpg`;
+                drawFlag();
+            } else {
+                loadYesterdayFallback();
+            }
         }
 
         function loadYesterdayFallback() {
@@ -280,9 +298,14 @@ window.addEventListener('DOMContentLoaded', () => {
             fallbackImg.onload = function() {
                 if (currentMode !== "proxy-latest") return;
                 rawWebcamImage = fallbackImg;
+                statusDiv.textContent = `No captures found for today yet. Loaded fallback: archive-${yesterdayStr}_1.jpg`;
                 drawFlag();
             };
+            fallbackImg.onerror = function() {
+                statusDiv.textContent = "⚠️ Could not resolve current or fallback image assets.";
+            }
         }
+
         probeNextIndex();
     }
 
