@@ -240,7 +240,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('toggleDebug').addEventListener('change', (e) => { config.debug = e.target.checked; drawFlag(); });
 
-    let isProbing = false; // Flag to prevent stacking interval races
+    let isProbing = false;
 
     function loadLatestProxyImage() {
         if (currentMode !== "proxy-latest" || isProbing) return;
@@ -250,7 +250,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const now = new Date();
         const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-        let highestFoundImg = null;
+        let latestValidSrc = null;
+        let lastValidIndex = 0;
         let currentCheckIndex = 1;
 
         function probeNextIndex() {
@@ -259,30 +260,37 @@ window.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Set a safety cutoff ceiling so a broken directory state won't lock up the browser
-            if (currentCheckIndex > 10) {
+            if (currentCheckIndex > 15) {
                 finalizeLoad();
                 return;
             }
 
             const testImg = new Image();
-            testImg.src = `./semiLivePics/archive-${todayStr}_${currentCheckIndex}.jpg?t=${Date.now()}`;
+            const targetSrc = `./semiLivePics/archive-${todayStr}_${currentCheckIndex}.jpg?t=${Date.now()}`;
+
             testImg.onload = function() {
-                highestFoundImg = testImg;
+                // Pin the exact string path and index down immediately on success
+                latestValidSrc = targetSrc;
+                lastValidIndex = currentCheckIndex;
+
                 currentCheckIndex++;
                 probeNextIndex();
             };
             testImg.onerror = function() {
                 finalizeLoad();
             };
+            testImg.src = targetSrc;
         }
 
         function finalizeLoad() {
             isProbing = false;
-            if (highestFoundImg) {
-                rawWebcamImage = highestFoundImg;
-                statusDiv.textContent = `Displaying proxy snapshot: archive-${todayStr}_${currentCheckIndex - 1}.jpg`;
-                drawFlag();
+            if (latestValidSrc) {
+                rawWebcamImage = new Image();
+                rawWebcamImage.src = latestValidSrc;
+                rawWebcamImage.onload = function() {
+                    statusDiv.textContent = `Displaying proxy snapshot: archive-${todayStr}_${lastValidIndex}.jpg`;
+                    drawFlag();
+                };
             } else {
                 loadYesterdayFallback();
             }
