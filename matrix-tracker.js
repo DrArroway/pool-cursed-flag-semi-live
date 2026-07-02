@@ -24,38 +24,66 @@ window.addEventListener('DOMContentLoaded', () => {
         debug: false
     };
 
-    const archiveCatalog = {
-        "2026-06-25": { totalImages: 6, baseHour: 9, intervalMinutes: 45 },
-        "2026-06-24": { totalImages: 1, baseHour: 12, intervalMinutes: 0 },
-        "2026-06-23": { totalImages: 3, baseHour: 10, intervalMinutes: 0 }
-    };
+    let archiveCatalog = {};
 
+    // 1. Fetch catalog metadata safely for bounds checking
+    fetch('./semiLivePics/catalog_registry.json')
+    .then(res => res.ok ? res.json() : {})
+    .then(data => {
+        archiveCatalog = data;
+        // Re-sync constraints once metadata is loaded
+        syncArchiveInputConstraints();
+    })
+    .catch(err => console.error('Catalog registry could not be resolved:', err));
+
+    // 2. Initialize the dropdown right away—completely independent of the metadata registry!
     function initArchiveCatalogUI() {
         const dateSelect = document.getElementById('archiveDateSelect');
         if (!dateSelect) return;
-        dateSelect.innerHTML = "";
 
-        Object.keys(archiveCatalog).sort().reverse().forEach(dateStr => {
-            const opt = document.createElement('option');
-            opt.value = dateStr;
-            opt.textContent = dateStr;
-            dateSelect.appendChild(opt);
-        });
+        fetch('./history.json')
+        .then(response => {
+            if (!response.ok) throw new Error('Network history manifest missing');
+            return response.json();
+        })
+        .then(dates => {
+            dateSelect.innerHTML = ''; // Wipe old hardcoded placeholders cleanly
 
-        dateSelect.addEventListener('change', syncArchiveInputConstraints);
-        document.getElementById('archiveIndexInput').addEventListener('input', updateEstimatedTimeReadout);
+            dates.forEach(dateStr => {
+                const opt = document.createElement('option');
+                opt.value = dateStr;
+                opt.textContent = dateStr;
+                dateSelect.appendChild(opt);
+            });
 
-        handleSourceViewToggle(document.getElementById('sourceSelector').value);
+            // Sync constraints for the initially selected date
+            syncArchiveInputConstraints();
+        })
+        .catch(err => console.error('Error loading dynamic historical archive dropdown:', err));
     }
+
+    // Fire the dropdown initializer immediately when the DOM content loads
+    initArchiveCatalogUI();
+
+    // 2. Fetch the catalog metadata for accurate indexing limits and time calculations
+    fetch('./semiLivePics/catalog_registry.json')
+    .then(res => res.ok ? res.json() : {})
+    .then(data => {
+        archiveCatalog = data;
+        // Kick off the initial drop-down building loop
+        initArchiveCatalogUI();
+    })
+    .catch(err => console.error('Catalog registry could not be resolved:', err));
 
     function syncArchiveInputConstraints() {
         const chosenDate = document.getElementById('archiveDateSelect').value;
         const indexInput = document.getElementById('archiveIndexInput');
         const maxLabel = document.getElementById('maxAvailableLabel');
 
-        if (!chosenDate || !archiveCatalog[chosenDate]) return;
+        if (!chosenDate) return;
 
-        const count = archiveCatalog[chosenDate].totalImages;
+        // Fallback to 1 if the date entry isn't tracked in catalog registry yet
+        const count = archiveCatalog[chosenDate] ? archiveCatalog[chosenDate].totalImages : 1;
         indexInput.max = count;
         if (parseInt(indexInput.value) > count) {
             indexInput.value = count;
@@ -70,12 +98,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const index = parseInt(document.getElementById('archiveIndexInput').value) || 1;
         const metaBox = document.getElementById('archiveMetaDetails');
 
-        if (!chosenDate || !archiveCatalog[chosenDate]) {
-            metaBox.style.display = 'none';
-            return;
-        }
+        if (!chosenDate || !metaBox) return;
 
-        const dayData = archiveCatalog[chosenDate];
+        // Use recorded values or default to starting at 6:00 AM D.C. local time
+        const dayData = archiveCatalog[chosenDate] || { baseHour: 6, intervalMinutes: 0 };
         let totalMinutes = (dayData.baseHour * 60) + dayData.intervalMinutes + ((index - 1) * 30);
         let hr = Math.floor(totalMinutes / 60);
         let min = totalMinutes % 60;
@@ -86,6 +112,16 @@ window.addEventListener('DOMContentLoaded', () => {
         metaBox.style.display = 'block';
         metaBox.textContent = `⏰ Capture Time: ~ ${displayHr}:${displayMin} ${ampm} EDT`;
     }
+
+    // 3. Attach interactive UI state event listeners
+    const archiveDateEl = document.getElementById('archiveDateSelect');
+    const archiveIndexEl = document.getElementById('archiveIndexInput');
+
+    if (archiveDateEl) archiveDateEl.addEventListener('change', syncArchiveInputConstraints);
+    if (archiveIndexEl) archiveIndexEl.addEventListener('input', updateEstimatedTimeReadout);
+
+    document.getElementById('archiveDateSelect').addEventListener('change', syncArchiveInputConstraints);
+    document.getElementById('archiveIndexInput').addEventListener('input', updateEstimatedTimeReadout);
 
     function syncSlidersToConfig() {
         document.getElementById('boxX').value = config.x * 100;
