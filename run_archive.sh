@@ -78,9 +78,7 @@ node -e "
   fs.writeFileSync('$STATE_FILE', JSON.stringify(state));
 "
 
-# ==========================================================
-# PASTE THE NEW STEP HERE: AUTOMATED CATALOG INJECTION
-# ==========================================================
+# AUTOMATED CATALOG GENERATION
 node -e "
   const fs = require('fs');
   const catalogPath = './semiLivePics/catalog_registry.json';
@@ -98,12 +96,11 @@ node -e "
 echo "🚀 Preparing GitHub sync..."
 
 git pull origin main --rebase
-# Make sure to add the new catalog file to git so it gets pushed!
 git add "$OUTPUT_NAME" "$STATE_FILE" "./semiLivePics/catalog_registry.json"
 git commit -m "Auto-archive capture: $OUTPUT_NAME [skip ci]"
 
 if git push origin main; then
-    echo "📦 Successfully pushed $OUTPUT_NAME to GitHub!"
+    echo "📦 Successfully pushed $OUTPUT_NAME and catalog updates to GitHub!"
 else
-    echo "⚠️ Push failed. Image is saved locally and will sync on the next run."
+    echo "⚠️ Push failed."
 fi
