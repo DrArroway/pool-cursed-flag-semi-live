@@ -58,12 +58,8 @@ window.addEventListener('DOMContentLoaded', () => {
             syncArchiveInputConstraints();
 
             // 🚀 FORCE FIRST-LOAD PAINT:
-            // This triggers the default "Latest" view immediately once data structures are ready
-            if (typeof switchMode === 'function') {
-                switchMode("proxy-latest");
-            } else if (typeof loadLatestImage === 'function') {
-                loadLatestImage();
-            }
+            // Directly trigger your image processing scan engine right away
+            loadLatestProxyImage();
         })
         .catch(err => console.error('Error loading dynamic historical archive dropdown:', err));
     }
@@ -71,15 +67,6 @@ window.addEventListener('DOMContentLoaded', () => {
     // Fire the dropdown initializer immediately when the DOM content loads
     initArchiveCatalogUI();
 
-    // 2. Fetch the catalog metadata for accurate indexing limits and time calculations
-    fetch('./semiLivePics/catalog_registry.json')
-    .then(res => res.ok ? res.json() : {})
-    .then(data => {
-        archiveCatalog = data;
-        // Kick off the initial drop-down building loop
-        initArchiveCatalogUI();
-    })
-    .catch(err => console.error('Catalog registry could not be resolved:', err));
 
     function syncArchiveInputConstraints() {
         const chosenDate = document.getElementById('archiveDateSelect').value;
