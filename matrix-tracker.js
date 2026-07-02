@@ -31,12 +31,11 @@ window.addEventListener('DOMContentLoaded', () => {
     .then(res => res.ok ? res.json() : {})
     .then(data => {
         archiveCatalog = data;
-        // Re-sync constraints once metadata is loaded
         syncArchiveInputConstraints();
     })
     .catch(err => console.error('Catalog registry could not be resolved:', err));
 
-    // 2. Initialize the dropdown right away—completely independent of the metadata registry!
+    // 2. Initialize the dropdown and trigger the first image paint
     function initArchiveCatalogUI() {
         const dateSelect = document.getElementById('archiveDateSelect');
         if (!dateSelect) return;
@@ -47,7 +46,7 @@ window.addEventListener('DOMContentLoaded', () => {
             return response.json();
         })
         .then(dates => {
-            dateSelect.innerHTML = ''; // Wipe old hardcoded placeholders cleanly
+            dateSelect.innerHTML = '';
 
             dates.forEach(dateStr => {
                 const opt = document.createElement('option');
@@ -56,8 +55,15 @@ window.addEventListener('DOMContentLoaded', () => {
                 dateSelect.appendChild(opt);
             });
 
-            // Sync constraints for the initially selected date
             syncArchiveInputConstraints();
+
+            // 🚀 FORCE FIRST-LOAD PAINT:
+            // This triggers the default "Latest" view immediately once data structures are ready
+            if (typeof switchMode === 'function') {
+                switchMode("proxy-latest");
+            } else if (typeof loadLatestImage === 'function') {
+                loadLatestImage();
+            }
         })
         .catch(err => console.error('Error loading dynamic historical archive dropdown:', err));
     }
