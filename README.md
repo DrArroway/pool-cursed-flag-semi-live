@@ -41,7 +41,7 @@ The project runs on a basic pipeline of shell scripts, headless browser scraping
 ## Running It
 
 * **The Casual View:** Just go to https://drarroway.github.io/pool-cursed-flag-semi-live/ to watch the soup evolve.
-* **The Hardcore Route:** Fork the repository, tweak the matrix, and host your own cron jobs if you are a terminally online citizen of the USA.
+* **The Hardcore Route:** Fork the repository, tweak the matrix, and host your own cron jobs if you are a terminally onlineA.
 
 **Update Cadence:** Whenever I feel like turning on my computer.
 
@@ -49,6 +49,6 @@ The project runs on a basic pipeline of shell scripts, headless browser scraping
 
 ## Disclaimer
 
-I am not a professional programmer. I built this entire thing for the absolute meme with a massive amount of help from Gemini. I know the code is held together by digital duct tape and prayer. 
+I am not a professional programmer. I built this entire thing for the meme with a massive amount of help from Gemini. I know the code is held together by digital duct tape and prayer. 
 
-Please don't slap me, I know it's USAisan slope code. It's just a joke! ^^
+Please don't slap me, I know it's AI slope code. It's just a joke! ^^
