@@ -4,25 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pool Cursed Flag (Semi-Live)</title>
-    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #0d1117;
             color: #c9d1d9;
         }
-        /* Fixes Safari hiding the number stepper up/down arrows on macOS */
+
+        /* Force Safari on macOS to display numeric stepper arrows */
         #archiveIndexInput::-webkit-outer-spin-button,
         #archiveIndexInput::-webkit-inner-spin-button {
-            -webkit-appearance: textfield !important;
-            appearance: textfield !important;
-            margin: 0;
+            -webkit-appearance: inner-spin-button !important;
+            appearance: inner-spin-button !important;
             opacity: 1 !important;
             display: block !important;
         }
         input[type="number"] {
             -moz-appearance: textfield;
-            appearance: textfield;
         }
     </style>
 </head>
@@ -32,7 +30,6 @@
         <div class="row justify-content-center">
             <div class="col-md-8">
 
-                <!-- Main Header Card -->
                 <div class="card bg-dark border-secondary text-white mb-4">
                     <div class="card-body text-center">
                         <h1 class="card-title h3">Pool Cursed Flag Tracker</h1>
@@ -40,37 +37,35 @@
                     </div>
                 </div>
 
-                <!-- Webcams / Canvas Container Block -->
                 <div class="position-relative mb-4 text-center">
-                    <!-- Hidden elements or canvas objects go here depending on implementation -->
                     <div class="border border-secondary rounded p-2 bg-black">
-                        <span class="text-muted small">Canvas Display Workspace</span>
+                        <canvas id="flagCanvas" width="600" height="400" class="img-fluid rounded"></canvas>
                     </div>
+                    <div id="status" class="text-muted small mt-2" style="font-family: monospace;">Initializing matrix pipeline...</div>
                 </div>
 
-                <!-- Control Panels Configuration Section -->
                 <div class="card bg-dark border-secondary mb-4">
                     <div class="card-body">
 
-                        <!-- Mode Selector Tab Array -->
-                        <div class="btn-group w-100 mb-3" role="group">
-                            <!-- Toggle layout indicators will be wired dynamically by your script -->
+                        <div class="mb-3">
+                            <label for="sourceSelector" class="form-label" style="color: #58a6ff !important;">View Source</label>
+                            <select id="sourceSelector" class="form-select bg-dark text-white border-secondary">
+                                <option value="proxy-latest">🟢 Latest Local Capture</option>
+                                <option value="archive-browse">📅 Historical Archive Mode</option>
+                            </select>
+                            <div class="mt-2">
+                                <span id="valSource" class="badge bg-success">🟢 Latest Local Capture</span>
+                            </div>
                         </div>
 
-                        <!-- Calibration Variables Panel Area -->
-                        <div id="calibrationContainer" class="mb-3">
-                            <!-- Matrix sliders mapping (X, Y, W, H) bounds live here -->
-                        </div>
-
-                        <!-- Archive Browsing Controls Section -->
                         <div id="archivePickerContainer" class="mb-3" style="display: none;">
                             <label for="archiveDateSelect" style="color: #58a6ff !important;">Select Available Capture Date</label>
-                            <select id="archiveDateSelect" class="form-select mb-2"></select>
+                            <select id="archiveDateSelect" class="form-select mb-2 bg-dark text-white border-secondary"></select>
 
                             <label for="archiveIndexInput" style="color: #58a6ff !important;">Image Sequence Index</label>
                             <div class="input-group input-group-sm mb-2">
                                 <input type="number" id="archiveIndexInput" class="form-control" value="1" min="1" max="1" style="max-width: 90px;">
-                                <span class="input-group-text bg-dark border-secondary text-muted w-100 flex-fill" id="maxAvailableLabel">of 1 available</span>
+                                <span class="input-group-text bg-dark border-secondary text-muted" id="maxAvailableLabel">of 1 available</span>
                             </div>
 
                             <div id="archiveMetaDetails" class="alert alert-dark py-2 px-3 small mt-2 mb-0 border-secondary text-info" style="display: none; font-family: monospace; background-color: #0d1117;">
@@ -85,7 +80,6 @@
         </div>
     </div>
 
-    <!-- Application Core Modules -->
     <script src="matrix-tracker.js" defer></script>
 </body>
 </html>
