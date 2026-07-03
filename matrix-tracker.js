@@ -1,7 +1,11 @@
 window.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('flagCanvas');
+    if (!canvas) {
+        console.error("Critical Error: canvas target element with id 'flagCanvas' was not found in the DOM.");
+        return;
+    }
     const ctx = canvas.getContext('2d');
-    const statusDiv = document.getElementById('status');
+    const statusDiv = document.getElementById('status') || { set textContent(val) { console.log("Status:", val); }, set innerHTML(val) { console.log("Status HTML:", val); } };
 
     let starBackgroundColors = Array.from({length: 50}, () => "#1a2c42");
     let rawWebcamImage = null;
@@ -58,7 +62,6 @@ window.addEventListener('DOMContentLoaded', () => {
             syncArchiveInputConstraints();
 
             // 🚀 FORCE FIRST-LOAD PAINT:
-            // Directly trigger your image processing scan engine right away
             loadLatestProxyImage();
         })
         .catch(err => console.error('Error loading dynamic historical archive dropdown:', err));
@@ -69,11 +72,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     function syncArchiveInputConstraints() {
-        const chosenDate = document.getElementById('archiveDateSelect').value;
+        const dateSelect = document.getElementById('archiveDateSelect');
         const indexInput = document.getElementById('archiveIndexInput');
         const maxLabel = document.getElementById('maxAvailableLabel');
 
-        if (!chosenDate) return;
+        if (!dateSelect || !indexInput || !dateSelect.value) return;
+        const chosenDate = dateSelect.value;
 
         // Fallback to 1 if the date entry isn't tracked in catalog registry yet
         const count = archiveCatalog[chosenDate] ? archiveCatalog[chosenDate].totalImages : 1;
@@ -81,17 +85,21 @@ window.addEventListener('DOMContentLoaded', () => {
         if (parseInt(indexInput.value) > count) {
             indexInput.value = count;
         }
-        maxLabel.textContent = `of ${count} available`;
+        if (maxLabel) {
+            maxLabel.textContent = `of ${count} available`;
+        }
 
         updateEstimatedTimeReadout();
     }
 
     function updateEstimatedTimeReadout() {
-        const chosenDate = document.getElementById('archiveDateSelect').value;
-        const index = parseInt(document.getElementById('archiveIndexInput').value) || 1;
+        const dateSelect = document.getElementById('archiveDateSelect');
+        const indexInput = document.getElementById('archiveIndexInput');
         const metaBox = document.getElementById('archiveMetaDetails');
 
-        if (!chosenDate || !metaBox) return;
+        if (!dateSelect || !indexInput || !metaBox || !dateSelect.value) return;
+        const chosenDate = dateSelect.value;
+        const index = parseInt(indexInput.value) || 1;
 
         // Use recorded values or default to starting at 6:00 AM D.C. local time
         const dayData = archiveCatalog[chosenDate] || { baseHour: 6, intervalMinutes: 0 };
@@ -106,77 +114,118 @@ window.addEventListener('DOMContentLoaded', () => {
         metaBox.textContent = `⏰ Capture Time: ~ ${displayHr}:${displayMin} ${ampm} EDT`;
     }
 
-    // 3. Attach interactive UI state event listeners
+    // 3. Attach interactive UI state event listeners safely
     const archiveDateEl = document.getElementById('archiveDateSelect');
     const archiveIndexEl = document.getElementById('archiveIndexInput');
 
-    if (archiveDateEl) archiveDateEl.addEventListener('change', syncArchiveInputConstraints);
-    if (archiveIndexEl) archiveIndexEl.addEventListener('input', updateEstimatedTimeReadout);
-
-    function syncSlidersToConfig() {
-        document.getElementById('boxX').value = config.x * 100;
-        document.getElementById('valX').textContent = (config.x * 100).toFixed(1) + '%';
-
-        document.getElementById('boxY').value = config.y * 100;
-        document.getElementById('valY').textContent = (config.y * 100).toFixed(1) + '%';
-
-        document.getElementById('boxW').value = config.w * 100;
-        document.getElementById('valW').textContent = (config.w * 100).toFixed(1) + '%';
-
-        document.getElementById('boxH').value = config.h * 100;
-        document.getElementById('valH').textContent = (config.h * 100).toFixed(1) + '%';
-
-        document.getElementById('boxP').value = config.p;
-        document.getElementById('valP').textContent = config.p.toFixed(2) + 'x';
-
-        document.getElementById('toggleDebug').checked = config.debug;
-        document.getElementById('toggleCloudComp').checked = cloudCompensationActive;
-        document.getElementById('toggleAlgaeIsolate').checked = algaeIsolationActive;
+    if (archiveDateEl) {
+        archiveDateEl.addEventListener('change', () => {
+            syncArchiveInputConstraints();
+            if (currentMode === "archive-browse") {
+                loadCustomArchiveTarget();
+            }
+        });
     }
 
-    document.getElementById('toggleCalibrateBtn').addEventListener('click', (e) => {
-        const panel = document.getElementById('calibrationPanel');
-        const zoomCard = document.getElementById('zoomOpticCard');
-
-        if (panel.style.display === 'none') {
-            panel.style.display = 'block';
-            if (zoomCard) zoomCard.style.display = 'block';
-
-            config.debug = true;
-            document.getElementById('toggleDebug').checked = true;
-            e.target.textContent = "❌ Close Calibration Panel";
-            e.target.classList.add('btn-secondary');
-        } else {
-            panel.style.display = 'none';
-            if (zoomCard) {
-                zoomCard.style.display = 'none';
-                zoomMode = false;
-                const zoomToggle = document.getElementById('toggleZoomMode');
-                if (zoomToggle) zoomToggle.checked = false;
+    if (archiveIndexEl) {
+        archiveIndexEl.addEventListener('input', () => {
+            updateEstimatedTimeReadout();
+            if (currentMode === "archive-browse") {
+                loadCustomArchiveTarget();
             }
+        });
+    }
 
-            config.debug = false;
-            document.getElementById('toggleDebug').checked = false;
-            e.target.textContent = "🛠️ Open Calibration Panel";
-            e.target.classList.remove('btn-secondary');
-        }
-        drawFlag();
-    });
+    function setElementValue(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.value = value;
+    }
 
-    document.getElementById('toggleZoomMode').addEventListener('change', (e) => {
-        zoomMode = e.target.checked;
-        drawFlag();
-    });
+    function setElementText(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    }
 
-    document.getElementById('toggleCloudComp').addEventListener('change', (e) => {
-        cloudCompensationActive = e.target.checked;
-        drawFlag();
-    });
+    function setElementChecked(id, checked) {
+        const el = document.getElementById(id);
+        if (el) el.checked = checked;
+    }
 
-    document.getElementById('toggleAlgaeIsolate').addEventListener('change', (e) => {
-        algaeIsolationActive = e.target.checked;
-        drawFlag();
-    });
+    function syncSlidersToConfig() {
+        setElementValue('boxX', config.x * 100);
+        setElementText('valX', (config.x * 100).toFixed(1) + '%');
+
+        setElementValue('boxY', config.y * 100);
+        setElementText('valY', (config.y * 100).toFixed(1) + '%');
+
+        setElementValue('boxW', config.w * 100);
+        setElementText('valW', (config.w * 100).toFixed(1) + '%');
+
+        setElementValue('boxH', config.h * 100);
+        setElementText('valH', (config.h * 100).toFixed(1) + '%');
+
+        setElementValue('boxP', config.p);
+        setElementText('valP', config.p.toFixed(2) + 'x');
+
+        setElementChecked('toggleDebug', config.debug);
+        setElementChecked('toggleCloudComp', cloudCompensationActive);
+        setElementChecked('toggleAlgaeIsolate', algaeIsolationActive);
+    }
+
+    const toggleCalibrateBtn = document.getElementById('toggleCalibrateBtn');
+    if (toggleCalibrateBtn) {
+        toggleCalibrateBtn.addEventListener('click', (e) => {
+            const panel = document.getElementById('calibrationPanel');
+            const zoomCard = document.getElementById('zoomOpticCard');
+
+            if (panel && panel.style.display === 'none') {
+                panel.style.display = 'block';
+                if (zoomCard) zoomCard.style.display = 'block';
+
+                config.debug = true;
+                setElementChecked('toggleDebug', true);
+                e.target.textContent = "❌ Close Calibration Panel";
+                e.target.classList.add('btn-secondary');
+            } else {
+                if (panel) panel.style.display = 'none';
+                if (zoomCard) {
+                    zoomCard.style.display = 'none';
+                    zoomMode = false;
+                    setElementChecked('toggleZoomMode', false);
+                }
+
+                config.debug = false;
+                setElementChecked('toggleDebug', false);
+                e.target.textContent = "🛠️ Open Calibration Panel";
+                e.target.classList.remove('btn-secondary');
+            }
+            drawFlag();
+        });
+    }
+
+    const toggleZoomMode = document.getElementById('toggleZoomMode');
+    if (toggleZoomMode) {
+        toggleZoomMode.addEventListener('change', (e) => {
+            zoomMode = e.target.checked;
+            drawFlag();
+        });
+    }
+
+    const toggleCloudComp = document.getElementById('toggleCloudComp');
+    if (toggleCloudComp) {
+        toggleCloudComp.addEventListener('change', (e) => {
+            cloudCompensationActive = e.target.checked;
+            drawFlag();
+        });
+    }
+
+    const toggleAlgaeIsolate = document.getElementById('toggleAlgaeIsolate');
+    if (toggleAlgaeIsolate) {
+        toggleAlgaeIsolate.addEventListener('change', (e) => {
+            algaeIsolationActive = e.target.checked;
+            drawFlag();
+        });
+    }
 
     const inputs = [
         { id: 'boxX', key: 'x', div: 'valX', mult: 0.01, unit: '%' },
@@ -187,12 +236,15 @@ window.addEventListener('DOMContentLoaded', () => {
     ];
 
     inputs.forEach(input => {
-        document.getElementById(input.id).addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            config[input.key] = val * input.mult;
-            document.getElementById(input.div).textContent = val.toFixed(input.id === 'boxP' ? 2 : 1) + input.unit;
-            drawFlag();
-        });
+        const inputEl = document.getElementById(input.id);
+        if (inputEl) {
+            inputEl.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                config[input.key] = val * input.mult;
+                setElementText(input.div, val.toFixed(input.id === 'boxP' ? 2 : 1) + input.unit);
+                drawFlag();
+            });
+        }
     });
 
     function handleSourceViewToggle(val) {
@@ -201,41 +253,34 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (val === 'archive-browse') {
             if (archivePicker) archivePicker.style.display = 'block';
-            document.getElementById('valSource').textContent = "📅 Historical Archive Mode";
-            document.getElementById('valSource').className = "badge bg-info text-dark";
+            setElementText('valSource', "📅 Historical Archive Mode");
+            const valSourceEl = document.getElementById('valSource');
+            if (valSourceEl) valSourceEl.className = "badge bg-info text-dark";
             syncArchiveInputConstraints();
             loadCustomArchiveTarget();
         } else {
             if (archivePicker) archivePicker.style.display = 'none';
-            document.getElementById('valSource').textContent = "🟢 Latest Local Capture";
-            document.getElementById('valSource').className = "badge bg-success";
+            setElementText('valSource', "🟢 Latest Local Capture");
+            const valSourceEl = document.getElementById('valSource');
+            if (valSourceEl) valSourceEl.className = "badge bg-success";
             loadLatestProxyImage();
         }
     }
 
-    document.getElementById('sourceSelector').addEventListener('change', (e) => {
-        handleSourceViewToggle(e.target.value);
-    });
-
-    // 1. Trigger instantly when the date dropdown changes
-    if (archiveDateEl) {
-        archiveDateEl.addEventListener('change', () => {
-            if (typeof syncArchiveInputConstraints === "function") {
-                syncArchiveInputConstraints();
-            }
-            loadCustomArchiveTarget();
+    const sourceSelector = document.getElementById('sourceSelector');
+    if (sourceSelector) {
+        sourceSelector.addEventListener('change', (e) => {
+            handleSourceViewToggle(e.target.value);
         });
     }
 
-    // 2. Trigger instantly when clicking the up/down arrows or typing a number
-    if (archiveIndexEl) {
-        archiveIndexEl.addEventListener('input', loadCustomArchiveTarget);
-    }
-
     function loadCustomArchiveTarget() {
-        const chosenDate = document.getElementById('archiveDateSelect').value;
-        const chosenIndex = document.getElementById('archiveIndexInput').value;
-        if (!chosenDate) return;
+        const dateSelect = document.getElementById('archiveDateSelect');
+        const indexInput = document.getElementById('archiveIndexInput');
+        if (!dateSelect || !indexInput || !dateSelect.value) return;
+
+        const chosenDate = dateSelect.value;
+        const chosenIndex = indexInput.value;
 
         const subfolderFile = `archive-${chosenDate}_${chosenIndex}.jpg`;
         statusDiv.textContent = `Probing asset path: semiLivePics/${subfolderFile}...`;
@@ -277,7 +322,10 @@ window.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    document.getElementById('toggleDebug').addEventListener('change', (e) => { config.debug = e.target.checked; drawFlag(); });
+    const toggleDebug = document.getElementById('toggleDebug');
+    if (toggleDebug) {
+        toggleDebug.addEventListener('change', (e) => { config.debug = e.target.checked; drawFlag(); });
+    }
 
     let isProbing = false;
 
@@ -659,7 +707,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     syncSlidersToConfig();
-    initArchiveCatalogUI();
 
     setInterval(() => {
         if (currentMode === "proxy-latest") loadLatestProxyImage();
