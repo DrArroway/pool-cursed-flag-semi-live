@@ -220,7 +220,9 @@ window.addEventListener('DOMContentLoaded', () => {
         handleSourceViewToggle(e.target.value);
     });
 
-    document.getElementById('loadArchiveBtn').addEventListener('click', loadCustomArchiveTarget);
+    // Auto-load instantly when changing dropdown selection or clicking number spinners
+    document.getElementById('archiveDateSelect').addEventListener('change', loadCustomArchiveTarget);
+    document.getElementById('archiveIndexInput').addEventListener('input', loadCustomArchiveTarget);
 
     function loadCustomArchiveTarget() {
         const chosenDate = document.getElementById('archiveDateSelect').value;

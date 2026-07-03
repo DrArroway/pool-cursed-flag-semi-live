@@ -90,17 +90,27 @@ node -e "
   fs.writeFileSync(catalogPath, JSON.stringify(catalog, null, 2));
 "
 
+# Generate a clean, dynamic JSON array of all unique history dates
+printf '[' > history.json
+ls semiLivePics/ | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' | sort -u | tac | sed 's/.*/  "&",/' | sed '$ s/,$//' >> history.json
+printf ']\n' >> history.json
+
 # ==========================================
 # AUTOMATED GITHUB UPLOAD
 # ==========================================
 echo "🚀 Preparing GitHub sync..."
 
+# Stage everything together cleanly
+git add semiLivePics/ archive_state.json history.json ./semiLivePics/catalog_registry.json
+
+# Rebase to keep linear history tree perfectly clean
 git pull origin main --rebase
-git add "$OUTPUT_NAME" "$STATE_FILE" "./semiLivePics/catalog_registry.json"
-git commit -m "Auto-archive capture: $OUTPUT_NAME [skip ci]"
+
+# Commit WITHOUT [skip ci] so the Actions engine triggers cleanly on every image!
+git commit -m "Auto-archive capture: $OUTPUT_NAME"
 
 if git push origin main; then
-    echo "📦 Successfully pushed $OUTPUT_NAME and catalog updates to GitHub!"
+    echo "📦 Successfully pushed $OUTPUT_NAME, history.json, and catalog updates to GitHub!"
 else
     echo "⚠️ Push failed."
 fi
