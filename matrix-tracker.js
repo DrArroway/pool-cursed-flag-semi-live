@@ -220,18 +220,16 @@ window.addEventListener('DOMContentLoaded', () => {
         handleSourceViewToggle(e.target.value);
     });
 
-    // PASTE THIS INSTEAD:
-    const archiveDateEl = document.getElementById('archiveDateSelect');
-    const archiveIndexEl = document.getElementById('archiveIndexInput');
+    // REMOVE "const" FROM THESE TWO LINES:
+    archiveDateEl = document.getElementById('archiveDateSelect');
+    archiveIndexEl = document.getElementById('archiveIndexInput');
 
     // 1. Trigger instantly when the date dropdown changes
     if (archiveDateEl) {
         archiveDateEl.addEventListener('change', () => {
-            // This keeps the max numbers (like "of 4 available") matching the date change
             if (typeof syncArchiveInputConstraints === "function") {
                 syncArchiveInputConstraints();
             }
-            // Load the image immediately
             loadCustomArchiveTarget();
         });
     }
