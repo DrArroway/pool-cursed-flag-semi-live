@@ -52,3 +52,4 @@ The project runs on a basic pipeline of shell scripts, headless browser scraping
 I am not a professional programmer. I built this entire thing for the meme with a massive amount of help from Gemini. I know the code is held together by digital duct tape and prayer. 
 
 Please don't slap me, I know it's AI slope code. It's just a joke! ^^
+
