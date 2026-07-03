@@ -113,9 +113,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if (archiveDateEl) archiveDateEl.addEventListener('change', syncArchiveInputConstraints);
     if (archiveIndexEl) archiveIndexEl.addEventListener('input', updateEstimatedTimeReadout);
 
-    document.getElementById('archiveDateSelect').addEventListener('change', syncArchiveInputConstraints);
-    document.getElementById('archiveIndexInput').addEventListener('input', updateEstimatedTimeReadout);
-
     function syncSlidersToConfig() {
         document.getElementById('boxX').value = config.x * 100;
         document.getElementById('valX').textContent = (config.x * 100).toFixed(1) + '%';
@@ -220,11 +217,6 @@ window.addEventListener('DOMContentLoaded', () => {
         handleSourceViewToggle(e.target.value);
     });
 
-    // REMOVE "const" FROM THESE TWO LINES:
-    archiveDateEl = document.getElementById('archiveDateSelect');
-    archiveIndexEl = document.getElementById('archiveIndexInput');
-
-
     // 1. Trigger instantly when the date dropdown changes
     if (archiveDateEl) {
         archiveDateEl.addEventListener('change', () => {
@@ -233,11 +225,6 @@ window.addEventListener('DOMContentLoaded', () => {
             }
             loadCustomArchiveTarget();
         });
-    }
-
-    // 2. Trigger instantly when clicking the up/down arrows or typing a number
-    if (archiveIndexEl) {
-        archiveIndexEl.addEventListener('input', loadCustomArchiveTarget);
     }
 
     // 2. Trigger instantly when clicking the up/down arrows or typing a number
@@ -321,7 +308,6 @@ window.addEventListener('DOMContentLoaded', () => {
             const targetSrc = `./semiLivePics/archive-${todayStr}_${currentCheckIndex}.jpg?t=${Date.now()}`;
 
             testImg.onload = function() {
-                // Pin the exact string path and index down immediately on success
                 latestValidSrc = targetSrc;
                 lastValidIndex = currentCheckIndex;
 
@@ -373,24 +359,17 @@ window.addEventListener('DOMContentLoaded', () => {
      * Smart Atmospheric Color Pipeline Engine
      */
     function runColorCorrectionPipeline(r, g, b) {
-        // 1. SMART ADAPTIVE CLOUD COMPENSATION (FIXED FOR CONSTANT EVALUATION)
         if (cloudCompensationActive) {
-            // Calculate individual pixel relative luminance
-            const pixelLum = (r * 0.299 + g * 0.587 + b * 0.114);
-
-            // Apply S-Curve contrast stretch directly to enhance flat midtones on overcast captures
             const applySmartContrast = (val) => {
                 let norm = val / 255;
-                // Stronger contrast shape centered at mid-gray
                 norm = 1 / (1 + Math.exp(-8 * (norm - 0.5)));
-                return val + (norm * 255 - val) * 0.5; // 50% blend ratio
+                return val + (norm * 255 - val) * 0.5;
             };
 
             r = applySmartContrast(r);
             g = applySmartContrast(g);
             b = applySmartContrast(b);
 
-            // Dynamically inject solar warmth if the image context leans dark/muddy
             if (ambientSceneBrightness < 160) {
                 const warmthFactor = (160 - ambientSceneBrightness) / 160;
                 r = Math.min(255, r * (1.02 + warmthFactor * 0.04));
@@ -399,7 +378,6 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 2. ALGAE ISOLATION FILTER LOGIC
         if (algaeIsolationActive) {
             if (g > r && g > b) {
                 g = Math.min(255, g * 1.25);
@@ -414,20 +392,19 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function get50StarColorsFromTrapezoid(sCtx, imgW, imgH) {
-        // Sample baseline environment matrix data to compute lighting state natively first
         try {
             const sampleWidth = Math.floor(imgW * 0.2);
             const sampleHeight = Math.floor(imgH * 0.2);
             const ambientData = sCtx.getImageData(Math.floor(imgW * 0.4), Math.floor(imgH * 0.2), sampleWidth, sampleHeight).data;
             let totalLum = 0;
             let sampleCount = 0;
-            for (let i = 0; i < ambientData.length; i += 40) { // Step sequence to optimize loop lookup
+            for (let i = 0; i < ambientData.length; i += 40) {
                 totalLum += (ambientData[i] + ambientData[i+1] + ambientData[i+2]) / 3;
                 sampleCount++;
             }
             ambientSceneBrightness = totalLum / sampleCount;
         } catch (e) {
-            ambientSceneBrightness = 150; // Fallback default baseline
+            ambientSceneBrightness = 150;
         }
 
         const colors = [];
@@ -489,9 +466,6 @@ window.addEventListener('DOMContentLoaded', () => {
             starBackgroundColors = get50StarColorsFromTrapezoid(sCtx, rawWebcamImage.width, rawWebcamImage.height);
         }
 
-        // =============================================================
-        // ENHANCED VIEWPORT OPTIC (WITH SMART CONTRAST PREVIEW)
-        // =============================================================
         if (zoomMode && rawWebcamImage) {
             const topY = canvas.height * config.y;
             const bottomY = topY + (canvas.height * config.h);
