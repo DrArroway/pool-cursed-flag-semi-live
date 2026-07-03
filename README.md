@@ -9,7 +9,7 @@ Welcome to the tracking station for the D.C. Reflecting Pool's ecosystem. This a
 ## Running It
 
 * **The Casual View:** Just go to https://drarroway.github.io/pool-cursed-flag-semi-live/ to watch the soup evolve.
-* **The Hardcore Route:** Fork the repository, tweak the matrix, and host your own cron jobs if you are a terminally onlineA.
+* **The Hardcore Route:** Fork the repository, tweak the matrix, and host your own cron jobs if you are a terminally online.
 
 **Update Cadence:** Whenever I feel like turning on my computer.
 
