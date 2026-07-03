@@ -224,6 +224,7 @@ window.addEventListener('DOMContentLoaded', () => {
     archiveDateEl = document.getElementById('archiveDateSelect');
     archiveIndexEl = document.getElementById('archiveIndexInput');
 
+
     // 1. Trigger instantly when the date dropdown changes
     if (archiveDateEl) {
         archiveDateEl.addEventListener('change', () => {
@@ -232,6 +233,11 @@ window.addEventListener('DOMContentLoaded', () => {
             }
             loadCustomArchiveTarget();
         });
+    }
+
+    // 2. Trigger instantly when clicking the up/down arrows or typing a number
+    if (archiveIndexEl) {
+        archiveIndexEl.addEventListener('input', loadCustomArchiveTarget);
     }
 
     // 2. Trigger instantly when clicking the up/down arrows or typing a number
