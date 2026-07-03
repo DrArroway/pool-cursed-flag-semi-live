@@ -2,7 +2,7 @@
 
 > "It's easier to change the flag than it is to fix the Reflecting Pool."
 
-Welcome to the tracking station for the D.C. Reflecting Pool's ecosystem. This app dynamically repaints the stars of the USA flag using the real-time (well, semi-live) atmospheric and organic conditions of the water.
+Welcome to the tracking station for the D.C. Reflecting Pool's ecosystem. This app dynamically repaints the background stars of the USA flag using the real-time (well, semi-live) atmospheric and organic conditions of the water.
 
 ---
 
