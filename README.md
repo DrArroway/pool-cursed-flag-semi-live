@@ -1,8 +1,3 @@
-# 🚨 DISCLAIMER
-I am not a programmer. I used AI to build this entire thing for the meme. Don't slap me please, it's just a joke ^^
-
-pool-cursed-flag-semi-live
-
 It's easier to change the flag than fix the Reflecting Pool.
 
 
@@ -38,3 +33,5 @@ just what it at https://drarroway.github.io/pool-cursed-flag-semi-live/ to enjoy
 or forke it, improve it and run the capture scripts if you're terminally online
 
 Update cadence: "whenever I feel like to turn up my computer"
+
+I am not a programmer. I used help from Gemini to build this thing jsut for the meme... So... Don't slap me please, I know is solpe code. It's just a joke ^^
