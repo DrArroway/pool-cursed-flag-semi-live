@@ -6,6 +6,15 @@ Welcome to the tracking station for the D.C. Reflecting Pool's ecosystem. This a
 
 ---
 
+## Running It
+
+* **The Casual View:** Just go to https://drarroway.github.io/pool-cursed-flag-semi-live/ to watch the soup evolve.
+* **The Hardcore Route:** Fork the repository, tweak the matrix, and host your own cron jobs if you are a terminally onlineA.
+
+**Update Cadence:** Whenever I feel like turning on my computer.
+
+---
+
 ## Why "Semi-Live"?
 
 Fully live streaming video would be nice, sure. But after running the numbers, most people only need the image to look recent enough. Instead of burning through bandwidth, we grab a few strategic frames per day, push them here, and call it a day. It saves data, keeps the server happy, and honestly, nobody can tell the difference between a snapshot from 8 seconds ago and 6 hours ago anyway. 
@@ -35,15 +44,6 @@ The project runs on a basic pipeline of shell scripts, headless browser scraping
 * **Instant Canvas Loading:** A simple asynchronous engine that makes sure the images paint onto the screen correctly on the very first page load.
 * **Clean Archive Browser:** Skip through time! Swap dates and cycle through the day's images instantly. The code uses a buttonless slider layout that fetches the files automatically as you change inputs.
 * **Calibration Panel:** Real-time UI sliders that map bounding coordinates (X, Y, W, H) directly onto the canvas loop, so Muricans and international onlookers can adjust the box limits with immediate visual feedback.
-
----
-
-## Running It
-
-* **The Casual View:** Just go to https://drarroway.github.io/pool-cursed-flag-semi-live/ to watch the soup evolve.
-* **The Hardcore Route:** Fork the repository, tweak the matrix, and host your own cron jobs if you are a terminally onlineA.
-
-**Update Cadence:** Whenever I feel like turning on my computer.
 
 ---
 
