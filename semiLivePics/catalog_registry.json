@@ -208,5 +208,10 @@
     "totalImages": 1,
     "baseHour": 6,
     "intervalMinutes": 0
+  },
+  "2026-08-30": {
+    "totalImages": 1,
+    "baseHour": 6,
+    "intervalMinutes": 0
   }
 }
