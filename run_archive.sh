@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# Wait 15 seconds for KDE Plasma and the GPU to fully wake up
+sleep 15
+
 cd ~/pool-archiver/pool-cursed-flag-semi-live
 
 STATE_FILE="archive_state.json"
